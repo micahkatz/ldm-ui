@@ -3,6 +3,8 @@ import nltk
 import random
 from flask import Flask
 from nltk.corpus import wordnet
+from io import StringIO
+import boto3
 
 app = Flask(__name__)
 
@@ -85,7 +87,15 @@ def augmentation():
             all_data.append([" ".join(new_chat), sentiment])
 
     new_df = pd.DataFrame(all_data, columns=["chat", "sentiment"])
-    new_df.to_csv("api/output.csv", index=False)
+    # new_df.to_csv("api/output.csv", index=False)
+
+    # save csv to bucket
+    print("saving csv to bucket")
+    bucket = 'my_bucket_name'
+    csv_buffer = StringIO()
+    new_df.to_csv(csv_buffer)
+    s3_resource = boto3.resource('s3')
+    s3_resource.Object(bucket, 'df.csv').put(Body=csv_buffer.getvalue())
     print("finished augmentation")
 
-    return "Success. Finished at output.csv"
+    return "Success. Uploaded to s3"
