@@ -5,8 +5,18 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 })
 import { auth, currentUser, redirectToSignIn } from '@clerk/nextjs'
-
-export async function handleCreateDataset () {
+type ColumnType = {
+    name: string
+    description: string
+    id: string
+}
+export async function handleCreateDataset({
+    prompt,
+    columns,
+}: {
+    prompt: string
+    columns: ColumnType[]
+}) {
     const { userId } = auth()
 
     if (!userId) {
@@ -15,35 +25,52 @@ export async function handleCreateDataset () {
     const user = await currentUser()
     if (!user) {
         throw new Error('User Not Defined')
-
     }
     console.log({ emails: user?.emailAddresses })
     if (
         !user.emailAddresses.find(
-            (item) => item.emailAddress === 'micahj2110@gmail.com'
+            (item) => item.emailAddress === 'micahj2110@gmail.com' || item.emailAddress === 'bcsteele1228@gmail.com'
         )
     ) {
         throw new Error('Forbidden')
-        
     }
+
+    const makeColumnText = () => {
+        var columnText = ''
+        columns.forEach(
+            (column) =>
+                (columnText += `- ${column.name}: ${column.description}\n`)
+        )
+        return columnText
+    }
+
+    const userPrompt = `${prompt}
+
+    There should be ${columns.length} rows
+    
+    Columns:
+    ${makeColumnText()}
+    `
+    console.log({ userPrompt })
+    // return `cheese,drink,customer
+    // American,Soda,Vegetarian
+    // Cheddar,Beer,Carnivore
+    // Swiss,Water,Fitness Enthusiast`
     const completion = await openai.chat.completions.create({
         messages: [
             {
                 role: 'system',
                 content: `You are a Large Data Model. You create datasets to train AI. 
-                 Return Only comma separated rows of data.`,
+                 Return Only comma separated rows of data. Include the header.`,
             },
             {
                 role: 'user',
-                content: `Make me a dataset for a sentiment classification system.
-
-                There should be 5 rows
-                
-                Columns:
-                - chat: this column will contain a transcription of the user voice on a call
-                - sentiment: this column will contain the sentiment of the user transcription. The different sentiments are "positive", "negative", and "neutral"
-                `,
+                content: userPrompt,
             },
+            // `Make me a dataset for a sentiment classification system.
+            // - chat: this column will contain a transcription of the user voice on a call
+            // - sentiment: this column will contain the sentiment of the user transcription. The different sentiments are "positive", "negative", and "neutral"
+
             //     {
             //     role: "user",
             //     content:
@@ -64,10 +91,13 @@ export async function handleCreateDataset () {
     console.log(completion.choices[0])
     const response = completion?.choices?.[0]?.message?.content
     return response
-    }
+}
 
-export async function handleDataAugmentation () {
-    const response = await fetch(`${window.location.origin.toString()}/api/python/augmentation`, {method: 'GET'})
-    console.log('handleDataAugmentation status',response.status)
-    console.log('handleDataAugmentation',await response.text())
-    }
+export async function handleDataAugmentation() {
+    const response = await fetch(
+        `${window.location.origin.toString()}/api/python/augmentation`,
+        { method: 'GET' }
+    )
+    console.log('handleDataAugmentation status', response.status)
+    console.log('handleDataAugmentation', await response.text())
+}
