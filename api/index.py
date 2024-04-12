@@ -1,9 +1,9 @@
 import pandas as pd
 import nltk
 import random
-from flask import Flask, request
+from flask import Flask, request, send_file
 from nltk.corpus import wordnet
-from io import StringIO
+from io import BytesIO, StringIO
 
 app = Flask(__name__)
 
@@ -93,6 +93,14 @@ def augmentation():
                         all_data.append(data_row_copy)
 
         new_df = pd.DataFrame(all_data, columns=columns)
+        csv_as_string = new_df.to_csv(index=False)
+        # return send_file(
+        #     csv_buffer,
+        #     as_attachment=True,
+        #     download_name='test.csv',
+        #     mimetype='text/csv'
+        # )
+        return csv_as_string
         new_df.to_csv("api/output.csv", index=False)
         print("finished augmentation")
 

@@ -24,13 +24,15 @@ const CreateDatasetButton = (props: Props) => {
                         csvData: createDatasetMutation?.data,
                     }),
                     headers: {
-                        'Content-Type': 'application/json'
-                    }
+                        'Content-Type': 'application/json',
+                    },
                 }
             )
             console.log('handleDataAugmentation status', response.status)
-            // console.log('handleDataAugmentation', await response.text())
-            return await response.text()
+            const responseText = await response.text()
+            console.log('handleDataAugmentation responseText', responseText)
+            return responseText
+            return response.status
         },
     })
     type ColumnType = {
@@ -43,30 +45,45 @@ const CreateDatasetButton = (props: Props) => {
         { name: '', description: '', id: 'test' },
     ])
 
+    const csvToJson = (data: string) => {
+        const delimiter = ','
+        const titles = data.slice(0, data.indexOf('\n')).split(delimiter)
+        const jsonData = data
+            .slice(data.indexOf('\n') + 1)
+            .split('\n')
+            .map((v) => {
+                const values = v.split(delimiter)
+                return titles.reduce(
+                    (obj, title, index) =>
+                        (
+                            // @ts-ignore
+                            (obj[title] = values[index]), obj
+                        ),
+                    {}
+                )
+            })
+
+        return { jsonData, titles }
+    }
+
     const jsonFromCsvData = useMemo(() => {
         if (createDatasetMutation.data) {
             const { data } = createDatasetMutation
-            const delimiter = ','
-            const titles = data.slice(0, data.indexOf('\n')).split(delimiter)
-            const jsonData = data
-                .slice(data.indexOf('\n') + 1)
-                .split('\n')
-                .map((v) => {
-                    const values = v.split(delimiter)
-                    return titles.reduce(
-                        (obj, title, index) =>
-                            (
-                                // @ts-ignore
-                                (obj[title] = values[index]), obj
-                            ),
-                        {}
-                    )
-                })
-
+            const { jsonData, titles } = csvToJson(data)
             return { data: jsonData, headers: titles }
         }
         return null
     }, [createDatasetMutation.data])
+    const jsonFromAugmentedData = useMemo(() => {
+        if (augmentationMutation.data) {
+            const { data } = augmentationMutation
+            if (typeof data === 'string') {
+                const { jsonData, titles } = csvToJson(data)
+                return { data: jsonData, headers: titles }
+            }
+        }
+        return null
+    }, [augmentationMutation.data])
     return (
         <div className="flex flex-col">
             <p className="text-sm mb-1">Prompt</p>
@@ -197,15 +214,47 @@ const CreateDatasetButton = (props: Props) => {
                     e.preventDefault()
                     augmentationMutation.mutate()
                 }}
-                disabled={augmentationMutation.isPending || !createDatasetMutation?.data}
-                className='w-fit'
+                disabled={
+                    augmentationMutation.isPending ||
+                    !createDatasetMutation?.data
+                }
+                className="w-fit"
             >
                 {augmentationMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
                 Run Data Augmentation
             </Button>
-            <p>{augmentationMutation?.data || ''}</p>
+            {jsonFromAugmentedData && (
+                <DataTable
+                    data={jsonFromAugmentedData.data}
+                    columns={jsonFromAugmentedData.headers.map((title) => {
+                        return {
+                            accessorKey: title,
+                            header: ({ column }) => {
+                                return (
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() =>
+                                            column.toggleSorting(
+                                                column.getIsSorted() === 'asc'
+                                            )
+                                        }
+                                    >
+                                        {title}
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                )
+                            },
+                            cell: ({ row }) => (
+                                <div className="capitalize">
+                                    {row.getValue(title)}
+                                </div>
+                            ),
+                        }
+                    })}
+                />
+            )}
             {augmentationMutation?.error?.message && (
                 <p className="text-destructive mb-4">
                     {augmentationMutation?.error?.message}
