@@ -14,6 +14,25 @@ const CreateDatasetButton = (props: Props) => {
     const createDatasetMutation = useMutation({
         mutationFn: handleCreateDataset,
     })
+    const augmentationMutation = useMutation({
+        mutationFn: async () => {
+            const response = await fetch(
+                `${window.location.origin.toString()}/api/python/augmentation`,
+                {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        csvData: createDatasetMutation?.data,
+                    }),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            )
+            console.log('handleDataAugmentation status', response.status)
+            // console.log('handleDataAugmentation', await response.text())
+            return await response.text()
+        },
+    })
     type ColumnType = {
         name: string
         description: string
@@ -171,6 +190,26 @@ const CreateDatasetButton = (props: Props) => {
                         }
                     })}
                 />
+            )}
+
+            <Button
+                onClick={(e) => {
+                    e.preventDefault()
+                    augmentationMutation.mutate()
+                }}
+                disabled={augmentationMutation.isPending || !createDatasetMutation?.data}
+                className='w-fit'
+            >
+                {augmentationMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Run Data Augmentation
+            </Button>
+            <p>{augmentationMutation?.data || ''}</p>
+            {augmentationMutation?.error?.message && (
+                <p className="text-destructive mb-4">
+                    {augmentationMutation?.error?.message}
+                </p>
             )}
         </div>
     )

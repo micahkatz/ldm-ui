@@ -1,8 +1,9 @@
 import pandas as pd
 import nltk
 import random
-from flask import Flask
+from flask import Flask, request
 from nltk.corpus import wordnet
+from io import StringIO
 
 app = Flask(__name__)
 
@@ -60,32 +61,40 @@ def random_swap(sentence, n=5):
     return sentence
 
 
-@app.route("/api/augmentation")
+@app.route("/api/augmentation", methods=['POST'])
 def augmentation():
-    print("starting augmentation...")
-    df = pd.read_csv("api/input.csv")
-    all_data = []
 
-    for index, row in df.iterrows():
-        chat = row["chat"]
-        sentiment = row["sentiment"]
+    content_type = request.headers.get('Content-Type')
+    if (content_type == 'application/json'):
+        json = request.json
+    
+        print("starting augmentation...", json)
+        # df = pd.read_csv("api/input.csv")
+        df = pd.read_csv(StringIO(json['csvData']),sep=",")
+        all_data = []
 
-        all_data.append([chat, sentiment])
+        for index, row in df.iterrows():
+            chat = row["chat"]
+            sentiment = row["sentiment"]
 
-        words = chat.split(" ")
+            all_data.append([chat, sentiment])
 
-        for _ in range(12500):
-            new_chat = synonym_replacement(words)
-            all_data.append([new_chat, sentiment])
+            words = chat.split(" ")
 
-            new_chat = random_deletion(words)
-            all_data.append([" ".join(new_chat), sentiment])
+            for _ in range(12500):
+                new_chat = synonym_replacement(words)
+                all_data.append([new_chat, sentiment])
 
-            new_chat = random_swap(words)
-            all_data.append([" ".join(new_chat), sentiment])
+                new_chat = random_deletion(words)
+                all_data.append([" ".join(new_chat), sentiment])
 
-    new_df = pd.DataFrame(all_data, columns=["chat", "sentiment"])
-    new_df.to_csv("api/output.csv", index=False)
-    print("finished augmentation")
+                new_chat = random_swap(words)
+                all_data.append([" ".join(new_chat), sentiment])
 
-    return "Success. Finished at output.csv"
+        new_df = pd.DataFrame(all_data, columns=["chat", "sentiment"])
+        new_df.to_csv("api/output.csv", index=False)
+        print("finished augmentation")
+
+        return "Success. Finished at output.csv"
+    else:
+        return 'Content-Type not supported!'
