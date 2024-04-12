@@ -27,7 +27,7 @@ const RunAugmentationButton = (props: Props) => {
     const augmentationMutation = useMutation({
         mutationFn: async () => {
             const response = await fetch(
-                'http://localhost:3000/api/python/augmentation',
+                `${window.location.origin.toString()}/api/python/augmentation`,
                 { method: 'GET' }
             )
             console.log('handleDataAugmentation status', response.status)
