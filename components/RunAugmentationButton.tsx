@@ -50,6 +50,11 @@ const RunAugmentationButton = (props: Props) => {
                 Run Data Augmentation
             </Button>
             <p>{augmentationMutation?.data || ''}</p>
+            {augmentationMutation?.error?.message && (
+                <p className="text-destructive mb-4">
+                    {augmentationMutation?.error?.message}
+                </p>
+            )}
         </div>
     )
 }
