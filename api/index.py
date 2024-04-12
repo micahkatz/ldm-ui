@@ -4,6 +4,7 @@ import random
 from flask import Flask, request, send_file
 from nltk.corpus import wordnet
 from io import BytesIO, StringIO
+import os
 
 app = Flask(__name__)
 
@@ -15,8 +16,10 @@ def hello_world2():
 
 ################################
 
-nltk.download("wordnet")
+os.environ["NLTK_DATA"]="/tmp/nltk_data"
 
+
+nltk.download("wordnet",  download_dir='/tmp/nltk_data')
 
 def get_synonyms(word):
     synonyms = set()
