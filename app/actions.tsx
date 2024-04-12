@@ -93,11 +93,4 @@ export async function handleCreateDataset({
     return response
 }
 
-export async function handleDataAugmentation() {
-    const response = await fetch(
-        `${window.location.origin.toString()}/api/python/augmentation`,
-        { method: 'GET' }
-    )
-    console.log('handleDataAugmentation status', response.status)
-    console.log('handleDataAugmentation', await response.text())
-}
+
