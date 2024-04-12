@@ -7,13 +7,16 @@ from io import StringIO
 
 app = Flask(__name__)
 
+
 @app.route("/api/brady")
 def hello_world2():
     return "Brady Steele"
 
+
 ################################
 
 nltk.download("wordnet")
+
 
 def get_synonyms(word):
     synonyms = set()
@@ -39,8 +42,7 @@ def synonym_replacement(words, n=5):
         if num_replaced >= n:
             break
     sentence = " ".join(new_words)
-    new_sentence = "".join(sentence)
-    return new_sentence
+    return sentence
 
 
 def random_deletion(words, p=0.5):
@@ -61,40 +63,39 @@ def random_swap(sentence, n=5):
     return sentence
 
 
-@app.route("/api/augmentation", methods=['POST'])
+@app.route("/api/augmentation", methods=["POST"])
 def augmentation():
 
-    content_type = request.headers.get('Content-Type')
-    if (content_type == 'application/json'):
+    content_type = request.headers.get("Content-Type")
+    if content_type == "application/json":
         json = request.json
-    
+
         print("starting augmentation...", json)
         # df = pd.read_csv("api/input.csv")
-        df = pd.read_csv(StringIO(json['csvData']),sep=",")
+        df = pd.read_csv(StringIO(json["csvData"]), sep=",")
+        columns = df.columns.tolist()
         all_data = []
-
         for index, row in df.iterrows():
-            chat = row["chat"]
-            sentiment = row["sentiment"]
+            data_row = row.tolist()
 
-            all_data.append([chat, sentiment])
+            for col_idx, value in enumerate(data_row):
+                if len(str(value).split()) > 1:
+                    words = str(value).split(" ")
+                    for _ in range(20):
+                        if random.choice([True, False]):
+                            new_value = synonym_replacement(words)
+                        elif random.choice([True, False]):
+                            new_value = " ".join(random_deletion(words))
+                        else:
+                            new_value = " ".join(random_swap(words))
+                        data_row_copy = data_row.copy()
+                        data_row_copy[col_idx] = new_value
+                        all_data.append(data_row_copy)
 
-            words = chat.split(" ")
-
-            for _ in range(12500):
-                new_chat = synonym_replacement(words)
-                all_data.append([new_chat, sentiment])
-
-                new_chat = random_deletion(words)
-                all_data.append([" ".join(new_chat), sentiment])
-
-                new_chat = random_swap(words)
-                all_data.append([" ".join(new_chat), sentiment])
-
-        new_df = pd.DataFrame(all_data, columns=["chat", "sentiment"])
+        new_df = pd.DataFrame(all_data, columns=columns)
         new_df.to_csv("api/output.csv", index=False)
         print("finished augmentation")
 
         return "Success. Finished at output.csv"
     else:
-        return 'Content-Type not supported!'
+        return "Content-Type not supported!"
