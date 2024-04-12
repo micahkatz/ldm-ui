@@ -1,0 +1,6 @@
+chat,sentiment
+"Hello, how can I help you today?",positive
+"I am really frustrated with your service.",negative
+"I need assistance with my account.",neutral
+"Thank you for resolving my issue so quickly!",positive
+"I am disappointed with the product quality.",negative
