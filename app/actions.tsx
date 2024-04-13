@@ -5,6 +5,11 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 })
 import { auth, currentUser, redirectToSignIn } from '@clerk/nextjs'
+import { sql } from '@vercel/postgres'
+import { drizzle } from 'drizzle-orm/vercel-postgres'
+import { dataset } from '@/lib/schema'
+import { db } from '@/lib/db'
+
 type ColumnType = {
     name: string
     description: string
@@ -29,7 +34,9 @@ export async function handleCreateDataset({
     console.log({ emails: user?.emailAddresses })
     if (
         !user.emailAddresses.find(
-            (item) => item.emailAddress === 'micahj2110@gmail.com' || item.emailAddress === 'bcsteele1228@gmail.com'
+            (item) =>
+                item.emailAddress === 'micahj2110@gmail.com' ||
+                item.emailAddress === 'bcsteele1228@gmail.com'
         )
     ) {
         throw new Error('Forbidden')
@@ -51,7 +58,13 @@ export async function handleCreateDataset({
     Columns:
     ${makeColumnText()}
     `
-    console.log({ userPrompt })
+    const result = await db.insert(dataset).values({
+        prompt,
+        column_data: makeColumnText(),
+        user_id: userId
+    })
+    console.log({ result })
+
     // return `cheese,drink,customer
     // American,Soda,Vegetarian
     // Cheddar,Beer,Carnivore
@@ -92,5 +105,3 @@ export async function handleCreateDataset({
     const response = completion?.choices?.[0]?.message?.content
     return response
 }
-
-
