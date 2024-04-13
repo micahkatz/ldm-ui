@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
+import { ArrowUpDown, ChevronDown, Download, MoreHorizontal } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -136,7 +136,8 @@ export const columns: ColumnDef<Payment>[] = [
 ]
 type Props = {
     data: any[];
-    columns: ColumnDef<any>[]
+    columns: ColumnDef<any>[];
+    rawData?: string | number | null
 }
 export function DataTable(props: Props) {
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -187,16 +188,34 @@ export function DataTable(props: Props) {
     },
   })
 
+  const handleDownload = () => {
+    if(typeof props.rawData !== 'string'){
+      return
+    }
+    const blob = new Blob([props.rawData], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'data.csv';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }
+
   return (
     <div className="w-full overflow-scroll">
-      <div className="flex items-center py-4">
+      <div className="flex items-center py-4 gap-2">
         <Input
           placeholder="Search"
           onChange={(event) =>
             table.setGlobalFilter(event.target.value)
           }
-          className="max-w-sm mr-2"
+          className="max-w-sm"
         />
+        <Button variant="outline" className="" onClick={handleDownload}>
+              Download <Download className="ml-2 h-4 w-4" />
+            </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">

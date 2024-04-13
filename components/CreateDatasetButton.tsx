@@ -184,6 +184,7 @@ const CreateDatasetButton = (props: Props) => {
             {jsonFromCsvData && (
                 <DataTable
                     data={jsonFromCsvData.data}
+                    rawData={createDatasetMutation.data}
                     columns={jsonFromCsvData.headers.map((title) => {
                         return {
                             accessorKey: title,
@@ -231,6 +232,7 @@ const CreateDatasetButton = (props: Props) => {
             {jsonFromAugmentedData && (
                 <DataTable
                     data={jsonFromAugmentedData.data}
+                    rawData={augmentationMutation.data}
                     columns={jsonFromAugmentedData.headers.map((title) => {
                         return {
                             accessorKey: title,
