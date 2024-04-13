@@ -15,7 +15,7 @@ type Props = {
     className?: string
 }
 const Header = (props: Props) => (
-    <header className={twMerge('flex justify-between p-4 sticky top-0 backdrop-blur border-b-2', props.className)}>
+    <header className={twMerge('flex justify-between p-4 sticky top-0 backdrop-blur border-b-2 z-50', props.className)}>
         <div className={'flex items-center'}>
             <Link href="/" className={'flex'}>
                 {/* <Image className='fill-primary' src="/logo.svg" width="32" height="32" alt="Logo" /> */}
