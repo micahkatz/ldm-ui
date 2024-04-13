@@ -9,6 +9,8 @@ import { sql } from '@vercel/postgres'
 import { drizzle } from 'drizzle-orm/vercel-postgres'
 import { dataset } from '@/lib/schema'
 import { db } from '@/lib/db'
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { randomUUID } from 'crypto'
 
 type ColumnType = {
     name: string
@@ -58,12 +60,6 @@ export async function handleCreateDataset({
     Columns:
     ${makeColumnText()}
     `
-    const result = await db.insert(dataset).values({
-        prompt,
-        column_data: makeColumnText(),
-        user_id: userId
-    })
-    console.log({ result })
 
     // return `cheese,drink,customer
     // American,Soda,Vegetarian
@@ -100,8 +96,27 @@ export async function handleCreateDataset({
         ],
         model: 'gpt-3.5-turbo',
     })
+    const llmResponse =  completion?.choices?.[0]?.message?.content
+    console.log({llmResponse})
+    if(llmResponse){
+        const objectKey = `${randomUUID()}.csv`
+        const s3Client = new S3Client({ region: process.env.AWS_REGION })
+        const putCommand = new PutObjectCommand({
+            Body: llmResponse,
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: objectKey,
+        })
+        const s3response = await s3Client.send(putCommand)
+        console.log({ s3response })
 
-    console.log(completion.choices[0])
-    const response = completion?.choices?.[0]?.message?.content
-    return response
+        const result = await db.insert(dataset).values({
+            prompt,
+            column_data: makeColumnText(),
+            user_id: userId,
+            original_dataset_uri: objectKey
+        })
+        console.log({ result })
+    }
+
+    return llmResponse
 }
