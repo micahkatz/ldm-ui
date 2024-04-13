@@ -188,14 +188,14 @@ export function DataTable(props: Props) {
   })
 
   return (
-    <div className="w-full max-w-2xl overflow-scroll">
+    <div className="w-full overflow-scroll">
       <div className="flex items-center py-4">
         <Input
           placeholder="Search"
           onChange={(event) =>
             table.setGlobalFilter(event.target.value)
           }
-          className="max-w-sm"
+          className="max-w-sm mr-2"
         />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

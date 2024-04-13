@@ -88,7 +88,7 @@ const CreateDatasetButton = (props: Props) => {
         return null
     }, [augmentationMutation.data])
     return (
-        <div className="flex flex-col">
+        <div className="flex flex-col mx-4">
             <p className="text-sm mb-1">Prompt</p>
             <Input
                 placeholder="Enter a prompt to make a dataset"
