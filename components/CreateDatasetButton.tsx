@@ -17,7 +17,7 @@ const CreateDatasetButton = (props: Props) => {
     const augmentationMutation = useMutation({
         mutationFn: async () => {
             const response = await fetch(
-                `${window.location.origin.toString()}/api/python/augmentation`,
+                `${window.location.origin.toString()}/api/augmentation`,
                 {
                     method: 'POST',
                     body: JSON.stringify({
@@ -28,6 +28,9 @@ const CreateDatasetButton = (props: Props) => {
                     },
                 }
             )
+            if(!response.ok){
+                throw 'Error Augmenting Data'
+            }
             console.log('handleDataAugmentation status', response.status)
             const responseText = await response.text()
             console.log('handleDataAugmentation responseText', responseText)
