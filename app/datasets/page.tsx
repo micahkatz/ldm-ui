@@ -20,7 +20,10 @@ export default async function Datasets() {
     return (
         <main className="flex min-h-screen flex-col items-center p-24 bg-background">
             <div className="flex flex-col max-w-2xl">
-                <DatasetList datasetData={datasetData} />
+                <DatasetList
+                    // @ts-ignore
+                    datasetData={datasetData}
+                />
             </div>
         </main>
     )

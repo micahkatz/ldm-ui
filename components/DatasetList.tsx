@@ -65,5 +65,11 @@ export default function DatasetList(props: Props) {
         //   },
         // },
     ]
-    return <DataTable data={props.datasetData} columns={columns} />
+    return (
+        <DataTable
+            // @ts-ignore
+            data={props.datasetData}
+            columns={columns}
+        />
+    )
 }
