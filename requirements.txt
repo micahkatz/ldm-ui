@@ -2,3 +2,7 @@ Flask==2.2.2
 Werkzeug==2.2.2
 pandas
 nltk
+flask_socketio
+boto3
+botocore
+python-dotenv

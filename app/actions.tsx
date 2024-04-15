@@ -11,6 +11,7 @@ import { dataset } from '@/lib/schema'
 import { db } from '@/lib/db'
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { randomUUID } from 'crypto'
+import { eq } from 'drizzle-orm'
 
 type ColumnType = {
     name: string
@@ -56,7 +57,7 @@ export async function handleCreateDataset({
     const userPrompt = `${prompt}
 
     There should be ${columns.length} rows
-    
+
     Columns:
     ${makeColumnText()}
     `
@@ -69,7 +70,7 @@ export async function handleCreateDataset({
         messages: [
             {
                 role: 'system',
-                content: `You are a Large Data Model. You create datasets to train AI. 
+                content: `You are a Large Data Model. You create datasets to train AI.
                  Return Only comma separated rows of data. Include the header.`,
             },
             {
@@ -96,9 +97,9 @@ export async function handleCreateDataset({
         ],
         model: 'gpt-3.5-turbo',
     })
-    const llmResponse =  completion?.choices?.[0]?.message?.content
-    console.log({llmResponse})
-    if(llmResponse){
+    const llmResponse = completion?.choices?.[0]?.message?.content
+    console.log({ llmResponse })
+    if (llmResponse) {
         const objectKey = `${randomUUID()}.csv`
         const s3Client = new S3Client({ region: process.env.AWS_REGION })
         const putCommand = new PutObjectCommand({
@@ -109,14 +110,31 @@ export async function handleCreateDataset({
         const s3response = await s3Client.send(putCommand)
         console.log({ s3response })
 
-        const result = await db.insert(dataset).values({
-            prompt,
-            column_data: makeColumnText(),
-            user_id: userId,
-            original_dataset_uri: objectKey
-        })
-        console.log({ result })
-    }
+        const result = await db
+            .insert(dataset)
+            .values({
+                prompt,
+                column_data: makeColumnText(),
+                user_id: userId,
+                original_dataset_uri: objectKey,
+            })
+            .returning({ insertedId: dataset.id })
 
-    return llmResponse
+        console.log({ result })
+
+        return { llmResponse, datasetId: result?.[0]?.insertedId }
+    }
+    return { llmResponse }
+}
+
+export async function handleNewAugmentation(dataset_id: any, uri: string) {
+    console.log('handleNewAugmentation')
+    const result = await db
+        .update(dataset)
+        .set({
+            augmented_dataset_uri: uri,
+        })
+        .where(eq(dataset.id, dataset_id))
+    console.log('handleNewAugmentation result', result)
+    return 'Success'
 }
