@@ -19,7 +19,7 @@ app = Flask(__name__)
 
 
 # socketio = SocketIO(app, path='/api', resource='/api')
-socketio = SocketIO(app)
+socketio = SocketIO(app, debug=True)
 
 @socketio.on("connect")
 def connected():
@@ -29,7 +29,10 @@ def connected():
     # emit("connect",{"data":f"id: {request.sid} is connected"})
     emit("augmentationResponse",{"status":f"id: {request.sid} is connected"})
 
-
+@app.before_request
+def do_something_whenever_a_request_comes_in():
+    print('BEFORE REQUEST', request.path)
+    # request is available
 
 @app.route("/api/brady")
 def hello_world2():
