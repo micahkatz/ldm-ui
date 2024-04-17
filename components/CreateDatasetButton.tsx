@@ -1,7 +1,11 @@
 'use client'
 import React, { useEffect, useMemo } from 'react'
 import { Button } from './ui/button'
-import { handleCreateDataset, handleNewAugmentation } from '@/app/actions'
+import {
+    augmentDataset,
+    handleCreateDataset,
+    handleNewAugmentation,
+} from '@/app/actions'
 import { Input } from './ui/input'
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
@@ -14,7 +18,9 @@ import { useSocket, useSocketEvent } from 'socket.io-react-hook'
 type Props = {}
 
 const CreateDatasetButton = (props: Props) => {
+    // @ts-ignore
     const { socket, error } = useSocket()
+    // const { socket, error } = useSocket(process.env.NODE_ENV !== 'development' ? process.env.NEXT_PUBLIC_SOCKET_URL : undefined)
 
     const { lastMessage } = useSocketEvent(socket, 'augmentationResponse')
     const { sendMessage } = useSocketEvent(socket, 'augmentation')
@@ -65,37 +71,40 @@ const CreateDatasetButton = (props: Props) => {
     const createDatasetMutation = useMutation({
         mutationFn: handleCreateDataset,
     })
-    // const augmentationMutation = useMutation({
-    //     mutationFn: async () => {
-    //         // const response = await fetch(
-    //         //     `${window.location.origin.toString()}/api/augmentation`,
-    //         //     {
-    //         //         method: 'POST',
-    //         //         body: JSON.stringify({
-    //         //             csvData: createDatasetMutation?.data,
-    //         //         }),
-    //         //         headers: {
-    //         //             'Content-Type': 'application/json',
-    //         //         },
-    //         //     }
-    //         // )
-    //         // if (!response.ok) {
-    //         //     throw 'Error Augmenting Data'
-    //         // }
-    //         // console.log('handleDataAugmentation status', response.status)
-    //         // const responseText = await response.text()
-    //         // console.log('handleDataAugmentation responseText', responseText)
-    //         // return responseText
-    //         // return response.status
+    const augmentationMutation = useMutation({
+        mutationFn: async () => {
+            return await augmentDataset(
+                createDatasetMutation?.data?.llmResponse
+            )
+            // const response = await fetch(
+            //     `${window.location.origin.toString()}/api/augmentation`,
+            //     {
+            //         method: 'POST',
+            //         body: JSON.stringify({
+            //             csvData: createDatasetMutation?.data,
+            //         }),
+            //         headers: {
+            //             'Content-Type': 'application/json',
+            //         },
+            //     }
+            // )
+            // if (!response.ok) {
+            //     throw 'Error Augmenting Data'
+            // }
+            // console.log('handleDataAugmentation status', response.status)
+            // const responseText = await response.text()
+            // console.log('handleDataAugmentation responseText', responseText)
+            // return responseText
+            // return response.status
 
-    //         // setAugmentationLoading(true)
-    //         console.log(
-    //             'sending csv data to socket',
-    //             createDatasetMutation?.data
-    //         )
-    //         await sendMessage({ csvData: createDatasetMutation?.data })
-    //     },
-    // })
+            // setAugmentationLoading(true)
+            // console.log(
+            //     'sending csv data to socket',
+            //     createDatasetMutation?.data
+            // )
+            // await sendMessage({ csvData: createDatasetMutation?.data })
+        },
+    })
     type ColumnType = {
         name: string
         description: string
@@ -330,19 +339,27 @@ const CreateDatasetButton = (props: Props) => {
                 onClick={(e) => {
                     e.preventDefault()
                     setAugmentationLoading(true)
-                    sendMessage({
-                        csvData: createDatasetMutation?.data?.llmResponse,
-                    })
+                    augmentationMutation.mutate()
+                    // sendMessage({
+                    //     csvData: createDatasetMutation?.data?.llmResponse,
+                    // })
                 }}
                 disabled={
-                    augmentationLoading ||
+                    augmentationMutation.isPending ||
                     !createDatasetMutation?.data?.llmResponse
                 }
+                // disabled={
+                //     augmentationLoading ||
+                //     !createDatasetMutation?.data?.llmResponse
+                // }
                 className="w-fit"
             >
-                {augmentationLoading && (
+                {augmentationMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
+                {/* {augmentationLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )} */}
                 Run Data Augmentation
             </Button>
             {streamingAugmentedData && (

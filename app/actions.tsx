@@ -12,6 +12,9 @@ import { db } from '@/lib/db'
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { randomUUID } from 'crypto'
 import { eq } from 'drizzle-orm'
+import AWS from 'aws-sdk'
+AWS.config.update({ region: 'us-east-1' })
+var sqs = new AWS.SQS({ region: 'us-east-1' })
 
 type ColumnType = {
     name: string
@@ -62,10 +65,12 @@ export async function handleCreateDataset({
     ${makeColumnText()}
     `
 
-    // return `cheese,drink,customer
-    // American,Soda,Vegetarian
-    // Cheddar,Beer,Carnivore
-    // Swiss,Water,Fitness Enthusiast`
+    return {
+        llmResponse: `cheese,drink,customer
+    American,Soda,Vegetarian
+    Cheddar,Beer,Carnivore
+    Swiss,Water,Fitness Enthusiast`,
+    }
     const completion = await openai.chat.completions.create({
         messages: [
             {
@@ -127,6 +132,42 @@ export async function handleCreateDataset({
     return { llmResponse }
 }
 
+export async function augmentDataset(csv_data: string | null | undefined) {
+    const { userId } = auth()
+
+    if (!userId) {
+        throw new Error('Unauthorized')
+    }
+    var params: AWS.SQS.SendMessageRequest = {
+        MessageAttributes: {
+            uid: {
+                DataType: 'String',
+                StringValue: userId,
+            },
+        },
+        MessageBody: csv_data,
+        QueueUrl: process.env.SQS_URL,
+        MessageGroupId: 'default',
+        MessageDeduplicationId: 'default',
+    }
+
+    try {
+        const sqsResponse = await new Promise((resolve, reject) => {
+            sqs.sendMessage(params, function (err: any, data: any) {
+                if (err) {
+                    console.log('Error', err)
+                    reject(err)
+                } else {
+                    console.log('Success', data.MessageId)
+                    resolve(data.MessageId)
+                }
+            })
+        })
+        console.log({ sqsResponse })
+    } catch (err) {
+        console.error('error with sqs', err)
+    }
+}
 export async function handleNewAugmentation(dataset_id: any, uri: string) {
     console.log('handleNewAugmentation')
     const result = await db

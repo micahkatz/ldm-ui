@@ -2,49 +2,25 @@ import time
 import pandas as pd
 import nltk
 import random
-from flask import Flask, request, send_file
 from nltk.corpus import wordnet
 from io import BytesIO, StringIO
 import os
 import logging
-from flask_socketio import SocketIO,emit
 import boto3
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 import uuid
 import re
 
-load_dotenv()
-app = Flask(__name__)
+def lambda_handler(event, context):
+    os.environ["NLTK_DATA"]="/tmp/nltk_data"
 
+    nltk.download("wordnet",  download_dir='/tmp/nltk_data')
 
-# socketio = SocketIO(app, path='/api', resource='/api')
-socketio = SocketIO(app, debug=True)
+    for message in event['Records']:
+        process_message(message)
+    print("done")
 
-@socketio.on("connect")
-def connected():
-    """event listener when client connects to the server"""
-    print(request.sid)
-    print("client has connected")
-    # emit("connect",{"data":f"id: {request.sid} is connected"})
-    emit("augmentationResponse",{"status":f"id: {request.sid} is connected"})
-
-@app.before_request
-def do_something_whenever_a_request_comes_in():
-    print('BEFORE REQUEST', request.path)
-    # request is available
-
-@app.route("/api/brady")
-def hello_world2():
-    return "Brady Steele"
-
-
-################################
-
-os.environ["NLTK_DATA"]="/tmp/nltk_data"
-
-
-nltk.download("wordnet",  download_dir='/tmp/nltk_data')
 
 synonyms_cache = {}
 antonyms_cache = {}
@@ -168,57 +144,17 @@ def random_swap(words, n=5):
         words[idx1], words[idx2] = words[idx2], words[idx1]
     return words
 
-# @app.route("/api/augmentation", methods=["POST"])
-# def augmentationHandler(data):
-#     print("augmentationHandler", data)
-#
-
-
-# def upload_file(file_name, bucket, object_name=None):
-#     """Upload a file to an S3 bucket
-
-#     :param file_name: File to upload
-#     :param bucket: Bucket to upload to
-#     :param object_name: S3 object name. If not specified then file_name is used
-#     :return: True if file was uploaded, else False
-#     """
-
-#     # If S3 object_name was not specified, use file_name
-#     if object_name is None:
-#         object_name = os.path.basename(file_name)
-
-#     # Upload the file
-#     s3_client = boto3.client('s3')
-#     try:
-#         response = s3_client.upload_file(file_name, bucket, object_name)
-#     except ClientError as e:
-#         logging.error(e)
-#         return False
-#     return True
-#
 def upload_file(data, file_name):
     s3 = boto3.resource('s3')
     object = s3.Object('ldm-csv-bucket', file_name)
     object.put(Body=data)
 
-
-@socketio.on("augmentation")
-def augmentation(json):
-
+def process_message(message):
     try:
-        # content_type = request.headers.get("Content-Type")
-        # if content_type == "application/json":
-        #     json = request.json
-        #
-        emit("augmentationResponse",{"status": "starting augmentation..."})
+        print(f"Processed message {message['body']}")
 
-
-        print("starting augmentation...", json)
-        # df = pd.read_csv("api/input.csv")
-        df = pd.read_csv(StringIO(json["csvData"]), sep=",")
+        df = pd.read_csv(StringIO(message['body']), sep=",")
         columns = df.columns.tolist()
-        print('sending columns', columns)
-        emit("augmentationAppend",{"columns": columns})
 
         all_data = []
 
@@ -257,21 +193,13 @@ def augmentation(json):
                         all_data.append(data_row_copy)
                         print('data_row', data_row_copy)
                         updated_data_row = data_row_copy
-                        # time.sleep(1)
-                        emit("augmentationAppend",{"row": data_row_copy})
 
-
-            # emit("augmentationAppend",{"row": updated_data_row})
         new_columns = columns + ['functions']
         new_df = pd.DataFrame(all_data, columns=new_columns)
         csv_as_string = new_df.to_csv(index=False)
         file_name = "augmentation-" +str(uuid.uuid4()) + '.csv'
-        emit("augmentationResponse",{"uri": file_name})
         upload_file(csv_as_string, file_name)
-
-        # return csv_as_string
-        # new_df.to_csv("api/output.csv", index=False)
-        # print("finished augmentation")
-    except Exception as e:
-        print("ERROR", e)
-        emit("augmentationResponse",{"error": e})
+        return file_name
+    except Exception as err:
+        print("An error occurred")
+        raise err
