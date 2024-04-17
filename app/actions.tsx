@@ -65,12 +65,12 @@ export async function handleCreateDataset({
     ${makeColumnText()}
     `
 
-    return {
-        llmResponse: `cheese,drink,customer
-    American,Soda,Vegetarian
-    Cheddar,Beer,Carnivore
-    Swiss,Water,Fitness Enthusiast`,
-    }
+    // return {
+    //     llmResponse: `cheese,drink,customer
+    // American,Soda,Vegetarian
+    // Cheddar,Beer,Carnivore
+    // Swiss,Water,Fitness Enthusiast`,
+    // }
     const completion = await openai.chat.completions.create({
         messages: [
             {
@@ -104,7 +104,7 @@ export async function handleCreateDataset({
     })
     const llmResponse = completion?.choices?.[0]?.message?.content
     console.log({ llmResponse })
-    if (llmResponse) {
+    if (llmResponse && llmResponse !== null) {
         const objectKey = `${randomUUID()}.csv`
         const s3Client = new S3Client({ region: process.env.AWS_REGION })
         const putCommand = new PutObjectCommand({
@@ -137,6 +137,9 @@ export async function augmentDataset(csv_data: string | null | undefined) {
 
     if (!userId) {
         throw new Error('Unauthorized')
+    }
+    if (!csv_data || !process.env.SQS_URL) {
+        throw new Error('Invalid request')
     }
     var params: AWS.SQS.SendMessageRequest = {
         MessageAttributes: {

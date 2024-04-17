@@ -12,15 +12,19 @@ from dotenv import load_dotenv
 import uuid
 import re
 
+import psycopg2
+from psycopg2 import Error
+
+load_dotenv()
+
 def lambda_handler(event, context):
-    os.environ["NLTK_DATA"]="/tmp/nltk_data"
-
-    nltk.download("wordnet",  download_dir='/tmp/nltk_data')
-
     for message in event['Records']:
         process_message(message)
     print("done")
 
+os.environ["NLTK_DATA"]="/tmp/nltk_data"
+
+nltk.download("wordnet",  download_dir='/tmp/nltk_data')
 
 synonyms_cache = {}
 antonyms_cache = {}
@@ -149,6 +153,40 @@ def upload_file(data, file_name):
     object = s3.Object('ldm-csv-bucket', file_name)
     object.put(Body=data)
 
+def update_db(file_name):
+    try:
+        # Establish a connection to the PostgreSQL database
+
+        os.environ["POSTGRES_PRISMA_URL"]
+        connection = psycopg2.connect(
+            user=os.environ["POSTGRES_USER"],
+            password=os.environ["POSTGRES_PASSWORD"],
+            host=os.environ["POSTGRES_HOST"],
+            database=os.environ["POSTGRES_DATABASE"]
+        )
+
+        cursor = connection.cursor()
+
+        # Define the SQL query to update the value
+        sql_query = """UPDATE dataset
+        SET augmented_dataset_uri = 'test.com'
+        WHERE id = 1;"""
+
+        # Execute the SQL query
+        cursor.execute(sql_query)
+
+        # Commit the changes
+        connection.commit()
+
+        # Close the cursor and connection
+        cursor.close()
+        connection.close()
+
+        print("Value updated successfully")
+
+    except (Exception, Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+
 def process_message(message):
     try:
         print(f"Processed message {message['body']}")
@@ -199,6 +237,7 @@ def process_message(message):
         csv_as_string = new_df.to_csv(index=False)
         file_name = "augmentation-" +str(uuid.uuid4()) + '.csv'
         upload_file(csv_as_string, file_name)
+        update_db(file_name)
         return file_name
     except Exception as err:
         print("An error occurred")
