@@ -11,6 +11,7 @@ from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 import uuid
 import re
+import json
 
 import psycopg2
 from psycopg2 import Error
@@ -153,27 +154,26 @@ def upload_file(data, file_name):
     object = s3.Object('ldm-csv-bucket', file_name)
     object.put(Body=data)
 
-def update_db(file_name):
+def update_db(file_name, dataset_id):
     try:
         # Establish a connection to the PostgreSQL database
-
-        os.environ["POSTGRES_PRISMA_URL"]
         connection = psycopg2.connect(
-            user=os.environ["POSTGRES_USER"],
-            password=os.environ["POSTGRES_PASSWORD"],
-            host=os.environ["POSTGRES_HOST"],
-            database=os.environ["POSTGRES_DATABASE"]
+            user=os.getenv("POSTGRES_USER"),
+            password=os.getenv("POSTGRES_PASSWORD"),
+            host=os.getenv("POSTGRES_HOST"),
+            database=os.getenv("POSTGRES_DATABASE")
         )
 
         cursor = connection.cursor()
 
-        # Define the SQL query to update the value
-        sql_query = """UPDATE dataset
-        SET augmented_dataset_uri = 'test.com'
-        WHERE id = 1;"""
+        sql_query = """
+            UPDATE dataset
+            SET augmented_dataset_uri = %s
+            WHERE id = %s;
+        """
 
-        # Execute the SQL query
-        cursor.execute(sql_query)
+        # Execute the SQL query with the variables
+        cursor.execute(sql_query, (file_name, dataset_id))
 
         # Commit the changes
         connection.commit()
@@ -191,7 +191,11 @@ def process_message(message):
     try:
         print(f"Processed message {message['body']}")
 
-        df = pd.read_csv(StringIO(message['body']), sep=",")
+        dataset_id = message['body'].split('///////')[0]
+        csv_data = message['body'].split('///////')[1]
+        print('dataset_id', dataset_id)
+
+        df = pd.read_csv(StringIO(csv_data), sep=",")
         columns = df.columns.tolist()
 
         all_data = []
@@ -237,8 +241,11 @@ def process_message(message):
         csv_as_string = new_df.to_csv(index=False)
         file_name = "augmentation-" +str(uuid.uuid4()) + '.csv'
         upload_file(csv_as_string, file_name)
-        update_db(file_name)
+        update_db(file_name, dataset_id)
         return file_name
     except Exception as err:
         print("An error occurred")
         raise err
+
+if __name__ == "__main__":
+    process_message({"body":"1///////name,occupation\nmicah,software engineer\nbrady,ai engineer"})

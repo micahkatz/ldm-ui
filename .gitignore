@@ -39,3 +39,4 @@ __pycache__
 api/output.csv
 
 drizzle
+.env

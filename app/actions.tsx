@@ -132,13 +132,16 @@ export async function handleCreateDataset({
     return { llmResponse }
 }
 
-export async function augmentDataset(csv_data: string | null | undefined) {
+export async function augmentDataset(
+    datasetId: string | null | undefined | number,
+    csv_data: string | null | undefined
+) {
     const { userId } = auth()
 
     if (!userId) {
         throw new Error('Unauthorized')
     }
-    if (!csv_data || !process.env.SQS_URL) {
+    if (!datasetId || !csv_data || !process.env.SQS_URL) {
         throw new Error('Invalid request')
     }
     var params: AWS.SQS.SendMessageRequest = {
@@ -148,7 +151,7 @@ export async function augmentDataset(csv_data: string | null | undefined) {
                 StringValue: userId,
             },
         },
-        MessageBody: csv_data,
+        MessageBody: `${datasetId}///////${csv_data}`,
         QueueUrl: process.env.SQS_URL,
         MessageGroupId: 'default',
         MessageDeduplicationId: 'default',
