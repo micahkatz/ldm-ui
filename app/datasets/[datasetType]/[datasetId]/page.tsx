@@ -46,6 +46,7 @@ export default async function DatasetPage({
         .select({
             original_dataset_uri: dataset.original_dataset_uri,
             augmented_dataset_uri: dataset.augmented_dataset_uri,
+            name: dataset.name
         })
         .from(dataset)
         .where(eq(params.datasetId, dataset.id))
@@ -62,7 +63,7 @@ export default async function DatasetPage({
         <main className="flex min-h-screen flex-col items-center p-24 bg-background">
             <div className="flex flex-col max-w-2xl">
                 <div className="flex justify-between">
-                    <h1 className="text-2xl font-bold">Dataset</h1>
+                    <h1 className="text-2xl font-bold">{dbResult?.[0]?.name || 'Dataset'}</h1>
                     <Button asChild>
                         <Link href="/new">
                             <Wand2 className="h-4 w-4 mr-1" />

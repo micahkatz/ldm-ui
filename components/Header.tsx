@@ -18,7 +18,7 @@ type Props = {
 const Header = (props: Props) => (
     <header
         className={twMerge(
-            'flex justify-between p-4 sticky top-0 backdrop-blur border-b-2 z-50',
+            'flex justify-between p-4 absolute w-full top-0 backdrop-blur backdrop-brightness-50 border-b-2 z-50',
             props.className
         )}
     >
