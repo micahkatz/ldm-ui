@@ -8,6 +8,7 @@ import { dataset } from '@/lib/schema'
 import { desc, eq } from 'drizzle-orm'
 import { auth } from '@clerk/nextjs'
 import DatasetList from '@/components/DatasetList'
+import { Plus } from 'lucide-react'
 
 export default async function Datasets() {
     const { userId } = auth()
@@ -22,7 +23,15 @@ export default async function Datasets() {
     return (
         <main className="flex min-h-screen flex-col items-center p-24 bg-background">
             <div className="flex flex-col max-w-2xl">
-                <h1 className="text-2xl font-bold mb-2">My Datasets</h1>
+                <div className="flex justify-between">
+                    <h1 className="text-2xl font-bold mb-2">My Datasets</h1>
+                    <Button asChild>
+                        <Link href="/">
+                            <Plus className="h-4 w-4 mr-1" />
+                            New
+                        </Link>
+                    </Button>
+                </div>
                 <DatasetList
                     // @ts-ignore
                     datasetData={datasetData}
