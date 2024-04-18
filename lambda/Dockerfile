@@ -1,7 +1,9 @@
 FROM public.ecr.aws/lambda/python:3.9
 
+RUN yum update -y
 # Install PostgreSQL development libraries
-RUN yum install -y postgresql-devel gcc libpq-dev
+# RUN yum install -y postgresql-devel gcc
+# RUN yum install -y postgresql-devel gcc libpq-dev
 
 COPY requirements.txt .
 RUN pip install --upgrade pip

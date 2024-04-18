@@ -9,13 +9,19 @@ import { sql } from '@vercel/postgres'
 import { drizzle } from 'drizzle-orm/vercel-postgres'
 import { dataset } from '@/lib/schema'
 import { db } from '@/lib/db'
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import {
+    PutObjectCommand,
+    GetObjectCommand,
+    S3Client,
+} from '@aws-sdk/client-s3'
 import { randomUUID } from 'crypto'
 import { eq } from 'drizzle-orm'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import AWS from 'aws-sdk'
 AWS.config.update({ region: 'us-east-1' })
-var sqs = new AWS.SQS({ region: 'us-east-1' })
 
+var sqs = new AWS.SQS({ region: 'us-east-1' })
+const s3Client = new S3Client({ region: process.env.AWS_REGION })
 type ColumnType = {
     name: string
     description: string
@@ -65,12 +71,13 @@ export async function handleCreateDataset({
     ${makeColumnText()}
     `
 
-    // return {
-    //     llmResponse: `cheese,drink,customer
-    // American,Soda,Vegetarian
-    // Cheddar,Beer,Carnivore
-    // Swiss,Water,Fitness Enthusiast`,
-    // }
+    return {
+        llmResponse: `cheese,drink,customer
+    American,Soda,Vegetarian
+    Cheddar,Beer,Carnivore
+    Swiss,Water,Fitness Enthusiast`,
+        datasetId: 1,
+    }
     const completion = await openai.chat.completions.create({
         messages: [
             {
@@ -106,7 +113,6 @@ export async function handleCreateDataset({
     console.log({ llmResponse })
     if (llmResponse && llmResponse !== null) {
         const objectKey = `${randomUUID()}.csv`
-        const s3Client = new S3Client({ region: process.env.AWS_REGION })
         const putCommand = new PutObjectCommand({
             Body: llmResponse,
             Bucket: process.env.AWS_BUCKET_NAME,
@@ -184,4 +190,33 @@ export async function handleNewAugmentation(dataset_id: any, uri: string) {
         .where(eq(dataset.id, dataset_id))
     console.log('handleNewAugmentation result', result)
     return 'Success'
+}
+
+export interface GetFileProps {
+    url: string
+}
+
+export async function getCsvSignedUrl(key: string) {
+    const command = new GetObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: key,
+    })
+
+    const url = await getSignedUrl(s3Client, command, { expiresIn: 900 })
+    return url
+}
+
+export async function getCsvFromS3(key: string) {
+    const command = new GetObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: key,
+    })
+
+    const response = await s3Client.send(command)
+    // The Body object also has 'transformToByteArray' and 'transformToWebStream' methods.
+    if (!response?.Body) {
+        return null
+    }
+    const str = await response.Body.transformToString()
+    return str
 }

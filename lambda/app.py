@@ -156,13 +156,17 @@ def upload_file(data, file_name):
 
 def update_db(file_name, dataset_id):
     try:
+        password = f'endpoint={os.getenv("POSTGRES_ENDPOINT_ID")};{os.getenv("POSTGRES_PASSWORD")}'
+        # database = f'{os.getenv("POSTGRES_DATABASE")} options=endpoint={os.getenv("POSTGRES_ENDPOINT_ID")}'
         # Establish a connection to the PostgreSQL database
-        connection = psycopg2.connect(
-            user=os.getenv("POSTGRES_USER"),
-            password=os.getenv("POSTGRES_PASSWORD"),
-            host=os.getenv("POSTGRES_HOST"),
-            database=os.getenv("POSTGRES_DATABASE")
-        )
+        # connection = psycopg2.connect(
+        #     user=os.getenv("POSTGRES_USER"),
+        #     password=password,
+        #     host=os.getenv("POSTGRES_HOST"),
+        #     database=os.getenv("POSTGRES_DATABASE"),
+        #     sslmode='require'
+        # )
+        connection = psycopg2.connect(os.getenv("POSTGRES_URL"))
 
         cursor = connection.cursor()
 
