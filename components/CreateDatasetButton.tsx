@@ -3,6 +3,7 @@ import React, { useEffect, useMemo } from 'react'
 import { Button } from './ui/button'
 import {
     augmentDataset,
+    getAugmentationCsvUrl,
     getCsvFromS3,
     getCsvSignedUrl,
     handleCreateDataset,
@@ -21,56 +22,6 @@ import Link from 'next/link'
 type Props = {}
 
 const CreateDatasetButton = (props: Props) => {
-    // @ts-ignore
-    // const { socket, error } = useSocket()
-    // const { socket, error } = useSocket(process.env.NODE_ENV !== 'development' ? process.env.NEXT_PUBLIC_SOCKET_URL : undefined)
-
-    // const { lastMessage } = useSocketEvent(socket, 'augmentationResponse')
-    // const { sendMessage } = useSocketEvent(socket, 'augmentation')
-    // const { lastMessage: lastAppendMessage } = useSocketEvent(
-    //     socket,
-    //     'augmentationAppend',
-    //     {
-    //         onMessage: (lastAppendMessage) => {
-    //             console.log(
-    //                 'augmentationAppend received message',
-    //                 lastAppendMessage
-    //             )
-    //             if (lastAppendMessage?.row) {
-    //                 setStreamingAugmentedData((prev) => {
-    //                     const newCsvString =
-    //                         prev?.csvString +
-    //                         `${lastAppendMessage?.row.join(',')}\n`
-    //                     const { jsonData, titles } = csvToJson(newCsvString)
-
-    //                     return {
-    //                         ...prev,
-    //                         data: jsonData,
-    //                         csvString: newCsvString,
-    //                     }
-    //                 })
-    //             }
-    //             if (lastAppendMessage?.columns) {
-    //                 setStreamingAugmentedData((prev) => {
-    //                     if (prev?.headers && prev.headers.length >= 0) {
-    //                         return prev
-    //                     }
-    //                     const columns: string[] = lastAppendMessage?.columns
-
-    //                     return {
-    //                         // removed any existing data since columns should come first
-    //                         data: [],
-    //                         headers: columns,
-    //                         csvString: columns.join(',') + '\n',
-    //                     }
-    //                 })
-    //             }
-    //         },
-    //     }
-    // )
-
-    // const [augmentationLoading, setAugmentationLoading] = useState(false)
-
     const createDatasetMutation = useMutation({
         mutationFn: handleCreateDataset,
     })
@@ -80,33 +31,6 @@ const CreateDatasetButton = (props: Props) => {
                 createDatasetMutation.data?.datasetId,
                 createDatasetMutation?.data?.llmResponse
             )
-            // const response = await fetch(
-            //     `${window.location.origin.toString()}/api/augmentation`,
-            //     {
-            //         method: 'POST',
-            //         body: JSON.stringify({
-            //             csvData: createDatasetMutation?.data,
-            //         }),
-            //         headers: {
-            //             'Content-Type': 'application/json',
-            //         },
-            //     }
-            // )
-            // if (!response.ok) {
-            //     throw 'Error Augmenting Data'
-            // }
-            // console.log('handleDataAugmentation status', response.status)
-            // const responseText = await response.text()
-            // console.log('handleDataAugmentation responseText', responseText)
-            // return responseText
-            // return response.status
-
-            // setAugmentationLoading(true)
-            // console.log(
-            //     'sending csv data to socket',
-            //     createDatasetMutation?.data
-            // )
-            // await sendMessage({ csvData: createDatasetMutation?.data })
         },
     })
     type ColumnType = {
@@ -118,6 +42,7 @@ const CreateDatasetButton = (props: Props) => {
     const [columns, setColumns] = useState<ColumnType[]>([
         { name: '', description: '', id: 'test' },
     ])
+    const [augmentationLoading, setAugmentationLoading] = useState(false)
 
     const csvToJson = (data: string) => {
         const delimiter = ','
@@ -148,68 +73,48 @@ const CreateDatasetButton = (props: Props) => {
         }
         return null
     }, [createDatasetMutation.data])
+    const [augmentationUrlPollingInterval, setAugmentationUrlPollingInterval] =
+        useState(2000)
 
-    const augmentationCsvUrlQuery = useQuery({
-        queryKey: ['augmentation-csv-url'],
+    const augmentationUrlPolling = useQuery({
+        queryKey: [
+            'augmentationUrlPolling',
+            createDatasetMutation.data?.datasetId,
+        ],
         queryFn: () =>
-            getCsvFromS3(
-                'augmentation-87475179-501d-42a3-b94f-f46cad732540.csv'
-            ),
-        enabled: !!augmentationMutation.isSuccess,
+            getAugmentationCsvUrl(createDatasetMutation.data?.datasetId),
+        enabled: !!(
+            augmentationMutation.isSuccess &&
+            createDatasetMutation.data?.datasetId
+        ),
+        refetchInterval: augmentationUrlPollingInterval,
+    })
+    const augmentationCsvDataQuery = useQuery({
+        queryKey: [
+            'augmentation-csv-url',
+            createDatasetMutation.data?.datasetId,
+        ],
+        queryFn: () => getCsvFromS3(augmentationUrlPolling?.data),
+        enabled: !!(
+            augmentationMutation.isSuccess && augmentationUrlPolling?.data
+        ),
+        retry: 10,
+        retryDelay: 2000,
     })
     const jsonFromAugmentedData = useMemo(() => {
-        if (augmentationCsvUrlQuery?.data) {
-            // setAugmentationLoading(false)
+        if (augmentationCsvDataQuery?.data) {
+            setAugmentationLoading(false)
+            setAugmentationUrlPollingInterval(0)
             const { jsonData, titles } = csvToJson(
-                augmentationCsvUrlQuery?.data
+                augmentationCsvDataQuery?.data
             )
             return { data: jsonData, headers: titles }
         }
         return null
-    }, [createDatasetMutation.data, augmentationCsvUrlQuery.data])
+    }, [createDatasetMutation.data, augmentationCsvDataQuery.data])
 
-    // const [streamingAugmentedData, setStreamingAugmentedData] = useState<{
-    //     headers?: string[]
-    //     data?: {}[]
-    //     csvString?: string
-    // } | null>(null)
-
-    // useEffect(() => {
-    //     if (lastAppendMessage?.row) {
-    //         setStreamingAugmentedData((prev) => {
-    //             const newCsvString =
-    //                 prev?.csvString + `${lastAppendMessage?.row.join(',')}\n`
-    //             const { jsonData, titles } = csvToJson(newCsvString)
-
-    //             return {
-    //                 ...prev,
-    //                 data: jsonData,
-    //                 csvString: newCsvString,
-    //             }
-    //         })
-    //     }
-    //     if (lastAppendMessage?.columns) {
-    //         setStreamingAugmentedData((prev) => {
-    //             if (prev?.headers && prev.headers.length >= 0) {
-    //                 return prev
-    //             }
-    //             const columns: string[] = lastAppendMessage?.columns
-
-    //             return {
-    //                 ...prev,
-    //                 headers: columns,
-    //                 csvString: columns.join(',') + '\n',
-    //             }
-    //         })
-    //     }
-    // }, [lastAppendMessage])
     return (
         <div className="flex flex-col mx-4">
-            {/* Connected: {JSON.stringify(socket.connected)} */}
-            {/* LastMessage: {JSON.stringify(lastMessage)} */}
-            {/* <code className="mb-4">
-                lastAppendMessage: {JSON.stringify(lastAppendMessage)}
-            </code> */}
             <h1 className="text-2xl font-bold mb-4">New Dataset</h1>
 
             <p className="text-sm mb-1">Prompt</p>
@@ -338,14 +243,14 @@ const CreateDatasetButton = (props: Props) => {
             <Button
                 onClick={(e) => {
                     e.preventDefault()
-                    // setAugmentationLoading(true)
+                    setAugmentationLoading(true)
                     augmentationMutation.mutate()
                     // sendMessage({
                     //     csvData: createDatasetMutation?.data?.llmResponse,
                     // })
                 }}
                 disabled={
-                    augmentationMutation.isPending ||
+                    augmentationLoading ||
                     !createDatasetMutation?.data?.llmResponse
                 }
                 // disabled={
@@ -354,54 +259,18 @@ const CreateDatasetButton = (props: Props) => {
                 // }
                 className="w-fit"
             >
-                {augmentationMutation.isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                {/* {augmentationLoading && (
+                {/* {augmentationMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )} */}
+                {augmentationLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 Run Data Augmentation
             </Button>
-            {/* {streamingAugmentedData && (
-                <DataTable
-                    data={streamingAugmentedData?.data || []}
-                    rawData={streamingAugmentedData?.csvString}
-                    columns={
-                        streamingAugmentedData?.headers
-                            ? streamingAugmentedData.headers.map((title) => {
-                                  return {
-                                      accessorKey: title,
-                                      header: ({ column }) => {
-                                          return (
-                                              <Button
-                                                  variant="ghost"
-                                                  onClick={() =>
-                                                      column.toggleSorting(
-                                                          column.getIsSorted() ===
-                                                              'asc'
-                                                      )
-                                                  }
-                                              >
-                                                  {title}
-                                                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                                              </Button>
-                                          )
-                                      },
-                                      cell: ({ row }) => (
-                                          <div className="capitalize">
-                                              {row.getValue(title)}
-                                          </div>
-                                      ),
-                                  }
-                              })
-                            : []
-                    }
-                />
-            )} */}
             {jsonFromAugmentedData && (
                 <DataTable
                     data={jsonFromAugmentedData.data}
-                    rawData={augmentationCsvUrlQuery?.data || ''}
+                    rawData={augmentationCsvDataQuery?.data || ''}
                     columns={jsonFromAugmentedData.headers.map((title) => {
                         return {
                             accessorKey: title,

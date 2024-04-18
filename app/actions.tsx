@@ -191,6 +191,17 @@ export async function handleNewAugmentation(dataset_id: any, uri: string) {
     console.log('handleNewAugmentation result', result)
     return 'Success'
 }
+export async function getAugmentationCsvUrl(dataset_id: any) {
+    const dbResult = await db
+        .select({
+            augmented_dataset_uri: dataset.augmented_dataset_uri,
+        })
+        .from(dataset)
+        .where(eq(dataset_id, dataset.id))
+        .limit(1)
+
+    return dbResult?.[0]?.augmented_dataset_uri
+}
 
 export interface GetFileProps {
     url: string
@@ -206,7 +217,7 @@ export async function getCsvSignedUrl(key: string) {
     return url
 }
 
-export async function getCsvFromS3(key: string | null) {
+export async function getCsvFromS3(key?: string | null) {
     if (!key) {
         return null
     }
@@ -221,5 +232,8 @@ export async function getCsvFromS3(key: string | null) {
         return null
     }
     const str = await response.Body.transformToString()
+    if (!str) {
+        throw 'No content'
+    }
     return str
 }
