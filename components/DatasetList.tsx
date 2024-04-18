@@ -1,10 +1,12 @@
 'use client'
-import { ArrowUpDown } from 'lucide-react'
+import { ArrowUpDown, ExternalLink } from 'lucide-react'
 import { DataTable } from './DataTable'
 import { Button } from './ui/button'
 import { DatasetType } from '@/lib/schema'
 import { ColumnDef } from '@tanstack/react-table'
 import { Checkbox } from './ui/checkbox'
+import moment from 'moment'
+import Link from 'next/link'
 type Props = {
     datasetData: DatasetType[] | null
 }
@@ -12,27 +14,32 @@ export default function DatasetList(props: Props) {
     const columns: ColumnDef<DatasetType>[] = [
         {
             accessorKey: 'prompt',
-            header: 'prompt',
+            header: 'Prompt',
             cell: ({ row }) => (
                 <div className="capitalize">{row.getValue('prompt')}</div>
             ),
         },
         {
-            accessorKey: 'original_dataset_uri',
-            header: 'original_dataset_uri',
+            accessorKey: 'createdAt',
+            header: 'Created',
             cell: ({ row }) => (
                 <div className="capitalize">
-                    {row.getValue('original_dataset_uri')}
+                    {moment(row.getValue('createdAt')).fromNow()}
                 </div>
             ),
         },
         {
-            accessorKey: 'augmented_dataset_uri',
-            header: 'augmented_dataset_uri',
+            accessorKey: 'id',
+            header: '',
             cell: ({ row }) => (
-                <div className="capitalize">
-                    {row.getValue('augmented_dataset_uri')}
-                </div>
+                <Button variant={'secondary'} asChild>
+                    <div className="flex gap-1">
+                        <Link href={`/datasets/${row.getValue('id')}`}>
+                            View
+                        </Link>
+                        <ExternalLink className="h-4 w-4" />
+                    </div>
+                </Button>
             ),
         },
         // {

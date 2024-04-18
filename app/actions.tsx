@@ -71,13 +71,13 @@ export async function handleCreateDataset({
     ${makeColumnText()}
     `
 
-    return {
-        llmResponse: `cheese,drink,customer
-    American,Soda,Vegetarian
-    Cheddar,Beer,Carnivore
-    Swiss,Water,Fitness Enthusiast`,
-        datasetId: 1,
-    }
+    // return {
+    //     llmResponse: `cheese,drink,customer
+    // American,Soda,Vegetarian
+    // Cheddar,Beer,Carnivore
+    // Swiss,Water,Fitness Enthusiast`,
+    //     datasetId: 1,
+    // }
     const completion = await openai.chat.completions.create({
         messages: [
             {
