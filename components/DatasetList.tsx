@@ -34,7 +34,7 @@ export default function DatasetList(props: Props) {
             cell: ({ row }) => (
                 <Button variant={'secondary'} asChild>
                     <div className="flex gap-1">
-                        <Link href={`/datasets/${row.getValue('id')}`}>
+                        <Link href={`/datasets/original/${row.getValue('id')}`}>
                             View
                         </Link>
                         <ExternalLink className="h-4 w-4" />

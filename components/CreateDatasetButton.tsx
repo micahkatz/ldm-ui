@@ -210,6 +210,8 @@ const CreateDatasetButton = (props: Props) => {
             {/* <code className="mb-4">
                 lastAppendMessage: {JSON.stringify(lastAppendMessage)}
             </code> */}
+            <h1 className="text-2xl font-bold mb-4">New Dataset</h1>
+
             <p className="text-sm mb-1">Prompt</p>
             <Input
                 placeholder="Enter a prompt to make a dataset"

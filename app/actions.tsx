@@ -206,7 +206,10 @@ export async function getCsvSignedUrl(key: string) {
     return url
 }
 
-export async function getCsvFromS3(key: string) {
+export async function getCsvFromS3(key: string | null) {
+    if (!key) {
+        return null
+    }
     const command = new GetObjectCommand({
         Bucket: process.env.AWS_BUCKET_NAME,
         Key: key,
