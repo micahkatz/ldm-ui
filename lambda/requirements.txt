@@ -7,3 +7,4 @@ boto3
 botocore
 python-dotenv
 flask-cors
+pg8000===1.31.1

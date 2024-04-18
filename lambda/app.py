@@ -13,9 +13,9 @@ import uuid
 import re
 import json
 
-import psycopg2
-from psycopg2 import Error
-
+# import psycopg2
+# from psycopg2 import Error
+import pg8000.native
 load_dotenv()
 
 def lambda_handler(event, context):
@@ -156,7 +156,7 @@ def upload_file(data, file_name):
 
 def update_db(file_name, dataset_id):
     try:
-        password = f'endpoint={os.getenv("POSTGRES_ENDPOINT_ID")};{os.getenv("POSTGRES_PASSWORD")}'
+        # password = f'endpoint={os.getenv("POSTGRES_ENDPOINT_ID")};{os.getenv("POSTGRES_PASSWORD")}'
         # database = f'{os.getenv("POSTGRES_DATABASE")} options=endpoint={os.getenv("POSTGRES_ENDPOINT_ID")}'
         # Establish a connection to the PostgreSQL database
         # connection = psycopg2.connect(
@@ -166,29 +166,38 @@ def update_db(file_name, dataset_id):
         #     database=os.getenv("POSTGRES_DATABASE"),
         #     sslmode='require'
         # )
-        connection = psycopg2.connect(os.getenv("POSTGRES_URL"))
 
-        cursor = connection.cursor()
+        connection = pg8000.native.Connection(
+            user=os.getenv("POSTGRES_USER"),
+             password=os.getenv("POSTGRES_PASSWORD"),
+             host=os.getenv("POSTGRES_HOST"),
+             database=os.getenv("POSTGRES_DATABASE"),
+        )
+
+        # connection = psycopg2.connect(os.getenv("POSTGRES_URL"))
+
 
         sql_query = """
             UPDATE dataset
-            SET augmented_dataset_uri = %s
-            WHERE id = %s;
+            SET augmented_dataset_uri = :uri
+            WHERE id = :id;
         """
-
+        # cursor = connection.cursor()
         # Execute the SQL query with the variables
-        cursor.execute(sql_query, (file_name, dataset_id))
-
-        # Commit the changes
-        connection.commit()
-
-        # Close the cursor and connection
-        cursor.close()
+        # cursor.execute(sql_query, (file_name, dataset_id))
+        connection.run(sql_query, uri=file_name, id=dataset_id)
         connection.close()
 
-        print("Value updated successfully")
+        # Commit the changes
+        # connection.commit()
 
-    except (Exception, Error) as error:
+        # Close the cursor and connection
+        # cursor.close()
+        # connection.close()
+
+        print("URL saved to db:", file_name, "for dataset", dataset_id)
+
+    except (Exception) as error:
         print("Error while connecting to PostgreSQL", error)
 
 def process_message(message):
