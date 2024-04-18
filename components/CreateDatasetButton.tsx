@@ -39,6 +39,7 @@ const CreateDatasetButton = (props: Props) => {
         id: string
     }
     const [prompt, setPrompt] = useState<string>('')
+    const [datasetName, setDatasetName] = useState<string>('')
     const [columns, setColumns] = useState<ColumnType[]>([
         { name: '', description: '', id: 'test' },
     ])
@@ -116,7 +117,15 @@ const CreateDatasetButton = (props: Props) => {
     return (
         <div className="flex flex-col mx-4">
             <h1 className="text-2xl font-bold mb-4">New Dataset</h1>
-
+            <p className="text-sm mb-1">Name</p>
+            <Input
+                placeholder="Enter a name for your dataset"
+                className="mb-4 w-96"
+                value={datasetName}
+                onChange={(e) => {
+                    setDatasetName(e.target.value)
+                }}
+            />
             <p className="text-sm mb-1">Prompt</p>
             <Input
                 placeholder="Enter a prompt to make a dataset"
@@ -193,7 +202,11 @@ const CreateDatasetButton = (props: Props) => {
             <Button
                 onClick={(e) => {
                     e.preventDefault()
-                    createDatasetMutation.mutate({ prompt, columns })
+                    createDatasetMutation.mutate({
+                        name: datasetName,
+                        prompt,
+                        columns,
+                    })
                 }}
                 disabled={createDatasetMutation.isPending || prompt.length <= 0}
                 className="w-fit mb-4"

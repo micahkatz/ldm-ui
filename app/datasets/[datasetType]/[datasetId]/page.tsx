@@ -64,7 +64,7 @@ export default async function DatasetPage({
                 <div className="flex justify-between">
                     <h1 className="text-2xl font-bold">Dataset</h1>
                     <Button asChild>
-                        <Link href="/">
+                        <Link href="/new">
                             <Wand2 className="h-4 w-4 mr-1" />
                             Augment
                         </Link>

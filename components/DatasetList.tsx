@@ -13,6 +13,13 @@ type Props = {
 export default function DatasetList(props: Props) {
     const columns: ColumnDef<DatasetType>[] = [
         {
+            accessorKey: 'name',
+            header: 'Name',
+            cell: ({ row }) => (
+                <div className="capitalize">{row.getValue('name')}</div>
+            ),
+        },
+        {
             accessorKey: 'prompt',
             header: 'Prompt',
             cell: ({ row }) => (

@@ -2,8 +2,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
 import { twMerge } from 'tailwind-merge'
-;import { ModeToggle } from './theme-toggle';
-('react-icons/fi')
+import { ModeToggle } from './theme-toggle'
+import { Button } from '@/components/ui/button'
+// ;('react-icons/fi')
 
 // Header component using <SignedIn> & <SignedOut>.
 //
@@ -15,7 +16,12 @@ type Props = {
     className?: string
 }
 const Header = (props: Props) => (
-    <header className={twMerge('flex justify-between p-4 sticky top-0 backdrop-blur border-b-2 z-50', props.className)}>
+    <header
+        className={twMerge(
+            'flex justify-between p-4 sticky top-0 backdrop-blur border-b-2 z-50',
+            props.className
+        )}
+    >
         <div className={'flex items-center'}>
             <Link href="/" className={'flex'}>
                 {/* <Image className='fill-primary' src="/logo.svg" width="32" height="32" alt="Logo" /> */}
@@ -25,12 +31,16 @@ const Header = (props: Props) => (
         </div>
         <div className={'flex items-center'}>
             <SignedOut>
-                {/* <Link href="/sign-in" className='text-primary font-bold'>Sign in</Link> */}
+                <Button asChild variant="ghost">
+                    <Link href="/dashboard" className="font-bold">
+                        Sign in
+                    </Link>
+                </Button>
             </SignedOut>
             <SignedIn>
                 {/* <UsesLeft /> */}
                 <ModeToggle />
-                <div className='ml-4'/>
+                <div className="ml-4" />
                 <UserButton
                     userProfileMode="navigation"
                     userProfileUrl="/user"

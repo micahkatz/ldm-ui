@@ -26,7 +26,7 @@ export default async function Datasets() {
                 <div className="flex justify-between">
                     <h1 className="text-2xl font-bold mb-2">My Datasets</h1>
                     <Button asChild>
-                        <Link href="/">
+                        <Link href="/new">
                             <Plus className="h-4 w-4 mr-1" />
                             New
                         </Link>

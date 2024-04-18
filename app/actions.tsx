@@ -28,9 +28,11 @@ type ColumnType = {
     id: string
 }
 export async function handleCreateDataset({
+    name,
     prompt,
     columns,
 }: {
+    name: string
     prompt: string
     columns: ColumnType[]
 }) {
@@ -124,6 +126,7 @@ export async function handleCreateDataset({
         const result = await db
             .insert(dataset)
             .values({
+                name,
                 prompt,
                 column_data: makeColumnText(),
                 user_id: userId,

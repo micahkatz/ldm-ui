@@ -2,6 +2,7 @@ import { pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core'
 
 export const dataset = pgTable('dataset', {
     id: serial('id'),
+    name: text('name'),
     user_id: text('user_id'),
     prompt: text('prompt'),
     original_dataset_uri: text('original_dataset_uri'),
