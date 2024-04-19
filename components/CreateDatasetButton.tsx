@@ -293,7 +293,7 @@ const CreateDatasetButton = (props: Props) => {
                                     <div className="flex">
                                         {
                                         // @ts-ignore
-                                        row.getValue(title)
+                                        row.getValue(title) &&row.getValue(title)
                                                 .split(';')
                                                 .map((func: string) => (
                                                     <Badge variant="outline" className="h-fit">
