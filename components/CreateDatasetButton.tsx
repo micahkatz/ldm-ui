@@ -17,6 +17,7 @@ import { DataTable } from './DataTable'
 import { io } from 'socket.io-client'
 import { useSocket, useSocketEvent } from 'socket.io-react-hook'
 import Link from 'next/link'
+import { Badge } from './ui/badge'
 // import { socket } from "../utils/socket";
 
 type Props = {}
@@ -285,6 +286,26 @@ const CreateDatasetButton = (props: Props) => {
                     data={jsonFromAugmentedData.data}
                     rawData={augmentationCsvDataQuery?.data || ''}
                     columns={jsonFromAugmentedData.headers.map((title) => {
+                        if(title ==='_functions'){
+                            return {
+                                accessorKey: title,
+                                cell: ({ row }) => (
+                                    <div className="flex">
+                                        {
+                                        // @ts-ignore
+                                        row.getValue(title)
+                                                .split(';')
+                                                .map((func: string) => (
+                                                    <Badge variant="outline" className="h-fit">
+                                                        {func}
+                                                    </Badge>
+                                                ))}
+                                    </div>
+                                ),
+                                enableSorting: false,
+                                enableHiding: true,
+                            }
+                        }
                         return {
                             accessorKey: title,
                             header: ({ column }) => {

@@ -249,7 +249,7 @@ def process_message(message):
                         print('data_row', data_row_copy)
                         updated_data_row = data_row_copy
 
-        new_columns = columns + ['functions']
+        new_columns = columns + ['_functions']
         new_df = pd.DataFrame(all_data, columns=new_columns)
         csv_as_string = new_df.to_csv(index=False)
         file_name = "augmentation-" +str(uuid.uuid4()) + '.csv'

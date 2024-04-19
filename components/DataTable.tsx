@@ -4,6 +4,7 @@ import * as React from 'react'
 import {
     ColumnDef,
     ColumnFiltersState,
+    Row,
     SortingState,
     VisibilityState,
     flexRender,
@@ -22,6 +23,7 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -166,9 +168,30 @@ export function DataTable(props: Props) {
         props?.columns ||
         (props?.titles
             ? props.titles.map((title) => {
+                if(title ==='_functions'){
+                    return {
+                        accessorKey: title,
+                        header: 'functions',
+                        cell: ({ row }) => (
+                            <div className="flex">
+                                {
+                                // @ts-ignore
+                                row.getValue(title)
+                                        .split(';')
+                                        .map((func: string) => (
+                                            <Badge variant="outline" className="h-fit">
+                                                {func}
+                                            </Badge>
+                                        ))}
+                            </div>
+                        ),
+                        enableSorting: false,
+                        enableHiding: true,
+                    }
+                }
                   return {
                       accessorKey: title,
-                      header: ({ column }) => {
+                      header: ({ column }: { column: any }) => {
                           return (
                               <Button
                                   variant="ghost"

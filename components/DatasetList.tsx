@@ -48,6 +48,8 @@ export default function DatasetList(props: Props) {
                     </div>
                 </Button>
             ),
+            enableSorting: false,
+            enableHiding: false,
         },
         // {
         //   id: "actions",
