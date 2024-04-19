@@ -40,12 +40,11 @@ const csvToJson = (data: string | null) => {
 export default async function DatasetPage({
     params,
 }: {
-    params: { datasetId: any; datasetType: 'original' | 'augmented' }
+    params: { datasetId: any }
 }) {
     const dbResult = await db
         .select({
-            original_dataset_uri: dataset.original_dataset_uri,
-            augmented_dataset_uri: dataset.augmented_dataset_uri,
+            dataset_uri: dataset.dataset_uri,
             name: dataset.name
         })
         .from(dataset)
@@ -53,9 +52,7 @@ export default async function DatasetPage({
         .limit(1)
 
     const csvData = await getCsvFromS3(
-        params.datasetType === 'original'
-            ? dbResult?.[0]?.original_dataset_uri
-            : dbResult?.[0]?.augmented_dataset_uri
+        dbResult?.[0]?.dataset_uri
     )
     const { jsonData, titles } = csvToJson(csvData)
 

@@ -130,7 +130,7 @@ export async function handleCreateDataset({
                 prompt,
                 column_data: makeColumnText(),
                 user_id: userId,
-                original_dataset_uri: objectKey,
+                dataset_uri: objectKey,
             })
             .returning({ insertedId: dataset.id })
 
@@ -188,7 +188,7 @@ export async function handleNewAugmentation(dataset_id: any, uri: string) {
     const result = await db
         .update(dataset)
         .set({
-            augmented_dataset_uri: uri,
+            dataset_uri: uri,
         })
         .where(eq(dataset.id, dataset_id))
     console.log('handleNewAugmentation result', result)
@@ -197,13 +197,13 @@ export async function handleNewAugmentation(dataset_id: any, uri: string) {
 export async function getAugmentationCsvUrl(dataset_id: any) {
     const dbResult = await db
         .select({
-            augmented_dataset_uri: dataset.augmented_dataset_uri,
+            augmented_uri: dataset.augmented_uri,
         })
         .from(dataset)
         .where(eq(dataset_id, dataset.id))
         .limit(1)
 
-    return dbResult?.[0]?.augmented_dataset_uri
+    return dbResult?.[0]?.augmented_uri
 }
 
 export interface GetFileProps {
