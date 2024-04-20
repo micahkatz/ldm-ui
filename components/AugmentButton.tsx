@@ -4,13 +4,23 @@ import {
     getAugmentationCsvUrl,
     getAugmentationIdByUri,
 } from '@/app/actions'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query'
-import React, { useEffect, useState } from 'react'
-import { Button } from './ui/button'
-import Link from 'next/link'
 import { Loader2, Wand2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-
+import { useEffect, useState } from 'react'
+import { Button } from './ui/button'
+import Link from 'next/link'
 type Props = {
     datasetId: string
     csvData: string | null
@@ -36,14 +46,29 @@ const AugmentButton = (props: Props) => {
     })
 
     const [augmentationLoading, setAugmentationLoading] = useState(false)
+    const [alertIsOpen, setAlertIsOpen] = useState(false)
 
     useEffect(() => {
-        if (augmentationUrlPolling?.data && augmentationMutation.status === 'success') {
+        const timeout = setTimeout(() => {
+            setAugmentationLoading(false)
+            setAlertIsOpen(true)
+            alert('There was an error. Try again')
+        }, 5000)
+        clearTimeout(timeout)
+    }, [augmentationLoading])
+
+    useEffect(() => {
+        if (
+            augmentationUrlPolling?.data &&
+            augmentationMutation.status === 'success'
+        ) {
             setAugmentationLoading(false)
             setAugmentationUrlPollingInterval(0)
             getAugmentationIdByUri(augmentationUrlPolling.data)
                 .then((id) => {
-                    queryClient.resetQueries({queryKey: ['augmentationUrlPolling', props.datasetId]})
+                    queryClient.resetQueries({
+                        queryKey: ['augmentationUrlPolling', props.datasetId],
+                    })
                     augmentationMutation.reset()
                     router.push(`/datasets/${id}`)
                 })
@@ -52,22 +77,41 @@ const AugmentButton = (props: Props) => {
     }, [augmentationUrlPolling?.data, augmentationMutation.status])
 
     return (
-        <Button
-            onClick={(e) => {
-                e.preventDefault()
-                setAugmentationLoading(true)
-                augmentationMutation.mutate()
-            }}
-            disabled={augmentationLoading}
-            className="w-fit"
-        >
-            {augmentationLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-                <Wand2 className="h-4 w-4 mr-1" />
-            )}
-            Augment
-        </Button>
+        <>
+            <Button
+                onClick={(e) => {
+                    e.preventDefault()
+                    setAugmentationLoading(true)
+                    augmentationMutation.mutate()
+                }}
+                disabled={augmentationLoading}
+                className="w-fit"
+            >
+                {augmentationLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                    <Wand2 className="h-4 w-4 mr-1" />
+                )}
+                Augment
+            </Button>
+
+            <AlertDialog onOpenChange={setAlertIsOpen} open={alertIsOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Try again
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            There was an error. Try again with another dataset
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction><Link href='/new'>Try again</Link></AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     )
 }
 

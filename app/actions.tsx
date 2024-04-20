@@ -85,7 +85,9 @@ export async function handleCreateDataset({
             {
                 role: 'system',
                 content: `You are a Large Data Model. You create datasets to train AI.
-                 Return Only comma separated rows of data. Include the header.`,
+                    Return Only comma separated rows of data. 
+                    If there are commas in a column, put quotes around it so there are not parsing errors.
+                    Include the header.`,
             },
             {
                 role: 'user',
