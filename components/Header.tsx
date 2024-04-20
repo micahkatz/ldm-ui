@@ -18,15 +18,16 @@ type Props = {
 const Header = (props: Props) => (
     <header
         className={twMerge(
-            'flex justify-between p-4 absolute w-full top-0 backdrop-blur backdrop-brightness-50 border-b-2 z-50',
+            'flex justify-between items-center p-4 fixed w-full top-0 backdrop-blur dark:backdrop-brightness-50 border-b-2 z-50',
             props.className
         )}
     >
         <div className={'flex items-center'}>
-            <Link href="/" className={'flex'}>
+            <Link href="/" className={'flex items-center'}>
                 {/* <Image className='fill-primary' src="/logo.svg" width="32" height="32" alt="Logo" /> */}
                 {/* <Logo /> */}
-                <span className="ml-3 font-bold">Large Data Model</span>
+                {/* <div className='w-6 h-6 rounded-full bg-primary'/> */}
+                <span className="ml-3 font-bold">DataSynth.ai</span>
             </Link>
         </div>
         <div className={'flex items-center'}>

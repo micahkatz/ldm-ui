@@ -173,7 +173,7 @@ export function DataTable(props: Props) {
                         accessorKey: title,
                         header: 'functions',
                         cell: ({ row }) => (
-                            <div className="flex">
+                            <div className="flex gap-2 flex-wrap max-w-md">
                                 {
                                 // @ts-ignore
                                 row.getValue(title) && row.getValue(title)

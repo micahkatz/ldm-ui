@@ -18,6 +18,7 @@ import { io } from 'socket.io-client'
 import { useSocket, useSocketEvent } from 'socket.io-react-hook'
 import Link from 'next/link'
 import { Badge } from './ui/badge'
+import { useRouter } from 'next/navigation'
 // import { socket } from "../utils/socket";
 
 type Props = {}
@@ -26,6 +27,20 @@ const CreateDatasetButton = (props: Props) => {
     const createDatasetMutation = useMutation({
         mutationFn: handleCreateDataset,
     })
+    const router = useRouter()
+
+    // reroute to new dataset after completion
+    useEffect(() => {
+        if (
+            createDatasetMutation?.data &&
+            createDatasetMutation.status === 'success'
+        ) {
+            const datasetId = createDatasetMutation?.data?.datasetId
+            createDatasetMutation.reset()
+            router.push(`/datasets/${datasetId}`)
+        }
+    }, [createDatasetMutation?.data, createDatasetMutation.status])
+
     const augmentationMutation = useMutation({
         mutationFn: async () => {
             return await augmentDataset(
@@ -223,7 +238,7 @@ const CreateDatasetButton = (props: Props) => {
                     {createDatasetMutation?.error?.message}
                 </p>
             )}
-            {jsonFromCsvData && (
+            {/* {jsonFromCsvData && (
                 <DataTable
                     data={jsonFromCsvData.data}
                     rawData={createDatasetMutation.data?.llmResponse}
@@ -253,7 +268,7 @@ const CreateDatasetButton = (props: Props) => {
                         }
                     })}
                 />
-            )}
+            )} */}
             <Button
                 onClick={(e) => {
                     e.preventDefault()
@@ -271,7 +286,7 @@ const CreateDatasetButton = (props: Props) => {
                 //     augmentationLoading ||
                 //     !createDatasetMutation?.data?.llmResponse
                 // }
-                className="w-fit"
+                className="w-fit hidden"
             >
                 {/* {augmentationMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -281,25 +296,32 @@ const CreateDatasetButton = (props: Props) => {
                 )}
                 Run Data Augmentation
             </Button>
-            {jsonFromAugmentedData && (
+            {/* {jsonFromAugmentedData && (
                 <DataTable
                     data={jsonFromAugmentedData.data}
                     rawData={augmentationCsvDataQuery?.data || ''}
                     columns={jsonFromAugmentedData.headers.map((title) => {
-                        if(title ==='_functions'){
+                        if (title === '_functions') {
                             return {
                                 accessorKey: title,
                                 cell: ({ row }) => (
                                     <div className="flex">
                                         {
-                                        // @ts-ignore
-                                        row.getValue(title) &&row.getValue(title)
-                                                .split(';')
-                                                .map((func: string) => (
-                                                    <Badge variant="outline" className="h-fit">
-                                                        {func}
-                                                    </Badge>
-                                                ))}
+                                            // @ts-ignore
+                                            row.getValue(title) &&
+                                                // @ts-ignore
+                                                row
+                                                    .getValue(title)
+                                                    .split(';')
+                                                    .map((func: string) => (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="h-fit"
+                                                        >
+                                                            {func}
+                                                        </Badge>
+                                                    ))
+                                        }
                                     </div>
                                 ),
                                 enableSorting: false,
@@ -331,7 +353,7 @@ const CreateDatasetButton = (props: Props) => {
                         }
                     })}
                 />
-            )}
+            )} */}
             {/* {augmentationMutation?.error?.message && (
                 <p className="text-destructive mb-4">
                     {augmentationMutation?.error?.message}

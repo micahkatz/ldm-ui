@@ -67,7 +67,7 @@ export async function handleCreateDataset({
 
     const userPrompt = `${prompt}
 
-    There should be ${columns.length} rows
+    There should be 2 rows
 
     Columns:
     ${makeColumnText()}
@@ -167,13 +167,14 @@ export async function augmentDataset(
     }
 
     try {
+        console.log('sending message to sqs')
         const sqsResponse = await new Promise((resolve, reject) => {
             sqs.sendMessage(params, function (err: any, data: any) {
                 if (err) {
-                    console.log('Error', err)
+                    console.log('Error sending message to SQS', err)
                     reject(err)
                 } else {
-                    console.log('Success', data.MessageId)
+                    console.log('Successfully sent message to SQS', data.MessageId)
                     resolve(data.MessageId)
                 }
             })
@@ -203,7 +204,22 @@ export async function getAugmentationCsvUrl(dataset_id: any) {
         .where(eq(dataset_id, dataset.id))
         .limit(1)
 
+    console.log('getAugmentationCsvUrl', dbResult?.[0]?.augmented_uri)
+
     return dbResult?.[0]?.augmented_uri
+}
+export async function getAugmentationIdByUri(uri: any) {
+    const dbResult = await db
+        .select({
+            id: dataset.id,
+        })
+        .from(dataset)
+        .where(eq(uri, dataset.dataset_uri))
+        .limit(1)
+
+    console.log('getAugmentationCsvUrl', dbResult?.[0]?.id)
+
+    return dbResult?.[0]?.id
 }
 
 export interface GetFileProps {
