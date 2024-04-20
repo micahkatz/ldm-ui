@@ -45,7 +45,6 @@ const CreateDatasetButton = (props: Props) => {
         mutationFn: async () => {
             return await augmentDataset(
                 createDatasetMutation.data?.datasetId,
-                createDatasetMutation?.data?.llmResponse
             )
         },
     })

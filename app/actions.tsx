@@ -67,7 +67,7 @@ export async function handleCreateDataset({
 
     const userPrompt = `${prompt}
 
-    There should be 2 rows
+    There should be 10 rows
 
     Columns:
     ${makeColumnText()}
@@ -145,14 +145,13 @@ export async function handleCreateDataset({
 
 export async function augmentDataset(
     datasetId: string | null | undefined | number,
-    csv_data: string | null | undefined
 ) {
     const { userId } = auth()
 
     if (!userId) {
         throw new Error('Unauthorized')
     }
-    if (!datasetId || !csv_data || !process.env.SQS_URL) {
+    if (!datasetId || !process.env.SQS_URL) {
         throw new Error('Invalid request')
     }
     var params: AWS.SQS.SendMessageRequest = {
@@ -162,7 +161,7 @@ export async function augmentDataset(
                 StringValue: userId,
             },
         },
-        MessageBody: `${datasetId}///////${csv_data}`,
+        MessageBody: `${datasetId}`,
         QueueUrl: process.env.SQS_URL,
         MessageGroupId: 'default',
         MessageDeduplicationId: 'default',

@@ -35,7 +35,7 @@ const AugmentButton = (props: Props) => {
     const augmentationMutation = useMutation({
         mutationFn: async () => {
             setAugmentationUrlPollingInterval(2000)
-            return await augmentDataset(props.datasetId, props.csvData)
+            return await augmentDataset(props.datasetId)
         },
     })
     const augmentationUrlPolling = useQuery({
@@ -54,7 +54,7 @@ const AugmentButton = (props: Props) => {
                 setAugmentationLoading(false)
                 setAlertIsOpen(true)
             }
-        }, 5000)
+        }, 15000) // stop loading after 15 seconds
         return () => {
             clearTimeout(timeout)
         }
