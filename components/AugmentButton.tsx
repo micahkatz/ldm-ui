@@ -50,12 +50,15 @@ const AugmentButton = (props: Props) => {
 
     useEffect(() => {
         const timeout = setTimeout(() => {
-            setAugmentationLoading(false)
-            setAlertIsOpen(true)
-            alert('There was an error. Try again')
+            if (augmentationLoading) {
+                setAugmentationLoading(false)
+                setAlertIsOpen(true)
+            }
         }, 5000)
-        clearTimeout(timeout)
-    }, [augmentationLoading])
+        return () => {
+            clearTimeout(timeout)
+        }
+    }, [augmentationLoading, setAugmentationLoading, setAlertIsOpen])
 
     useEffect(() => {
         if (
@@ -98,16 +101,16 @@ const AugmentButton = (props: Props) => {
             <AlertDialog onOpenChange={setAlertIsOpen} open={alertIsOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            Try again
-                        </AlertDialogTitle>
+                        <AlertDialogTitle>Try again</AlertDialogTitle>
                         <AlertDialogDescription>
                             There was an error. Try again with another dataset
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction><Link href='/new'>Try again</Link></AlertDialogAction>
+                        <AlertDialogAction onClick={(e) => e.preventDefault()}>
+                            <Link href="/new">Try again</Link>
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
