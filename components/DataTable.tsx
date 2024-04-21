@@ -42,6 +42,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
+import { getCsvSignedUrl } from '@/app/actions'
 
 export type Payment = {
     id: string
@@ -154,7 +155,8 @@ type Props = {
     data: any[]
     columns?: ColumnDef<any>[]
     titles?: string[]
-    rawData?: string | number | null
+    rawData?: string | number | null;
+    dataset_uri?: any
 }
 export function DataTable(props: Props) {
     const [sorting, setSorting] = React.useState<SortingState>([])
@@ -261,18 +263,20 @@ export function DataTable(props: Props) {
         },
     })
 
-    const handleDownload = () => {
-        if (typeof props.rawData !== 'string') {
+    const handleDownload = async() => {
+        if (!props.dataset_uri) {
             return
         }
-        const blob = new Blob([props.rawData], { type: 'text/csv' })
-        const url = window.URL.createObjectURL(blob)
+        // const blob = new Blob([props.rawData], { type: 'text/csv' })
+        // const url = window.URL.createObjectURL(blob)
+
+       const url = await getCsvSignedUrl(props.dataset_uri)
         const a = document.createElement('a')
         a.href = url
-        a.download = 'data.csv'
+        a.download = 'dataset.csv'
         document.body.appendChild(a)
         a.click()
-        window.URL.revokeObjectURL(url)
+        // window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
     }
 
@@ -286,9 +290,9 @@ export function DataTable(props: Props) {
                     }
                     className="max-w-sm"
                 />
-                <Button variant="outline" className="" onClick={handleDownload}>
+                {props?.dataset_uri && <Button variant="outline" className="" onClick={handleDownload}>
                     Download <Download className="ml-2 h-4 w-4" />
-                </Button>
+                </Button>}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="ml-auto">

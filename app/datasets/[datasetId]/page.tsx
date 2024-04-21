@@ -49,6 +49,7 @@ export default async function DatasetPage({
                         data={jsonData}
                         rawData={csvData || ''}
                         titles={titles}
+                        dataset_uri={dbResult?.[0]?.dataset_uri}
                     />
                 )}
             </div>
