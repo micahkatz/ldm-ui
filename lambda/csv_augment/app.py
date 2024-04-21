@@ -301,16 +301,16 @@ def load_csv_from_s3(bucket_name, file_key):
 
 def new_status_in_db(user_id, dataset_id):
     status_insert = """
-            INSERT INTO task (user_id, status, message, created_at, updated_at)
-            VALUES (:user_id, :status, :message, NOW(), NOW())
+            INSERT INTO task (user_id, status, message, dataset_id, created_at, updated_at)
+            VALUES (:user_id, :status, :message, :dataset_id, NOW(), NOW())
             RETURNING id;
         """
 
-    status = "STARTED"
-    message = dataset_id
+    status = "LOADING"
+    message = "Started Augmentation"
 
     db_result = connection.run(
-        status_insert, user_id=user_id, status=status, message=message
+        status_insert, user_id=user_id, status=status, message=message, dataset_id=dataset_id
     )
 
     print("finished adding new status", db_result)
@@ -356,6 +356,8 @@ def process_message(message):
         # df = pd.read_csv(BytesIO(csv_data))
 
         file_key = get_dataset_uri_by_id(dataset_id)
+
+        update_status_in_db(task_id=task_id, status="LOADING", message="Loading Dataset")
 
         df = load_csv_from_s3("ldm-csv-bucket", file_key)
         if df is None:
@@ -405,6 +407,11 @@ def process_message(message):
                         all_data.append(data_row_copy)
                         print("data_row", data_row_copy)
                         updated_data_row = data_row_copy
+
+                        update_status_in_db(task_id=task_id, status="LOADING", message=f'Created {len(all_data)} Rows')
+
+
+        update_status_in_db(task_id=task_id, status="LOADING", message=f'Finishing')
 
         # check if functions column is already there
         if "_functions" not in columns:

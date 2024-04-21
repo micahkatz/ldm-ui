@@ -17,6 +17,7 @@ export type DatasetType = typeof dataset
 export const task = pgTable('task', {
     id: serial('id'),
     user_id: text('user_id'),
+    dataset_id: serial('dataset_id'),
     status: text('status'),
     message: text('message'),
     createdAt: timestamp('created_at').defaultNow(),
