@@ -13,3 +13,15 @@ export const dataset = pgTable('dataset', {
 })
 
 export type DatasetType = typeof dataset
+
+export const task = pgTable('task', {
+    id: serial('id'),
+    user_id: text('user_id'),
+    status: text('status'),
+    message: text('message'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+    deletedAt: timestamp('deleted_at'),
+})
+
+export type TaskType = typeof task

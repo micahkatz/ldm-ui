@@ -40,3 +40,6 @@ api/output.csv
 
 drizzle
 .env
+
+image_augment/images/
+image_augment/aug_images/

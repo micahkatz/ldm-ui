@@ -172,11 +172,12 @@ def upload_file(data, file_name):
 
 
 connection = pg8000.native.Connection(
-            user=os.getenv("POSTGRES_USER"),
-            password=os.getenv("POSTGRES_PASSWORD"),
-            host=os.getenv("POSTGRES_HOST"),
-            database=os.getenv("POSTGRES_DATABASE"),
-        )
+    user=os.getenv("POSTGRES_USER"),
+    password=os.getenv("POSTGRES_PASSWORD"),
+    host=os.getenv("POSTGRES_HOST"),
+    database=os.getenv("POSTGRES_DATABASE"),
+)
+
 
 def get_dataset_by_id(dataset_id):
     query_initial_data = """
@@ -184,12 +185,15 @@ def get_dataset_by_id(dataset_id):
         """
     initial_data_result = connection.run(query_initial_data, id=dataset_id)
     return initial_data_result
+
+
 def get_dataset_uri_by_id(dataset_id):
     query_initial_data = """
             SELECT dataset_uri FROM dataset WHERE id = :id;
         """
     initial_data_result = connection.run(query_initial_data, id=dataset_id)
     return initial_data_result[0][0]
+
 
 def update_db(file_name, dataset_id):
     try:
@@ -213,7 +217,6 @@ def update_db(file_name, dataset_id):
 
         # connection = psycopg2.connect(os.getenv("POSTGRES_URL"))
 
-  
         initial_data_result = get_dataset_by_id(dataset_id)
         dataset_name = initial_data_result[0][0]
         print("dataset_name", dataset_name)
@@ -270,42 +273,80 @@ def update_db(file_name, dataset_id):
     except Exception as error:
         print("Error while connecting to PostgreSQL", error)
 
+
 def load_csv_from_s3(bucket_name, file_key):
     try:
         s3 = boto3.client("s3")
         # Get object from S3
-        
-        
+
         # bytes_buffer = io.BytesIO()
         # s3.download_fileobj(Bucket=bucket_name, Key=file_key, Fileobj=bytes_buffer)
 
         # byte_value = bytes_buffer.getvalue()
         # df = pd.read_csv(bytes_buffer)
 
-
-
         response = s3.get_object(Bucket=bucket_name, Key=file_key)
 
-        
         # Read CSV data
-        csv_data = response['Body'].read()
-        
+        csv_data = response["Body"].read()
+
         # Load CSV data into DataFrame
         df = pd.read_csv(BytesIO(csv_data))
-        
+
         return df
     except Exception as e:
         print(f"Error: {e}")
         return None
 
+
+def new_status_in_db(user_id, dataset_id):
+    status_insert = """
+            INSERT INTO task (user_id, status, message, created_at, updated_at)
+            VALUES (:user_id, :status, :message, NOW(), NOW())
+            RETURNING id;
+        """
+
+    status = "STARTED"
+    message = dataset_id
+
+    db_result = connection.run(
+        status_insert, user_id=user_id, status=status, message=message
+    )
+
+    print("finished adding new status", db_result)
+    task_id = db_result[0][0]
+    print("created task id", task_id)
+
+    return task_id
+
+
+def update_status_in_db(task_id, status, message=None):
+    update_status_query = """
+            UPDATE task
+            SET status = :status,
+                message = :message
+            WHERE id = :id;
+        """
+
+    connection.run(
+        update_status_query,
+        status=status,
+        message=message,
+        id=task_id,
+    )
+
+
 def process_message(message):
+    task_id = None
     try:
-        print(f"Processed message {message['body']}")
+        print(f"Processed message {message}")
 
         dataset_id = message["body"]
         # dataset_id = message["body"].split("///////")[0]
         # file_key = message["body"].split("///////")[1]
         print("dataset_id", dataset_id)
+        user_id = message["messageAttributes"]["uid"]
+        task_id = new_status_in_db(user_id=user_id, dataset_id=dataset_id)
 
         # s3 = boto3.resource("s3")
         # s3_response = s3.Object(Bucket="ldm-csv-bucket", Key=file_key)
@@ -318,7 +359,7 @@ def process_message(message):
 
         df = load_csv_from_s3("ldm-csv-bucket", file_key)
         if df is None:
-            return 'Unable to get csv from s3'
+            return "Unable to get csv from s3"
 
         columns = df.columns.tolist()
 
@@ -359,14 +400,14 @@ def process_message(message):
 
                         data_row_copy = data_row.copy()
                         data_row_copy[col_idx] = " ".join(new_value)
-                        if('_functions' not in columns):
+                        if "_functions" not in columns:
                             data_row_copy.append("; ".join(functions))
                         all_data.append(data_row_copy)
                         print("data_row", data_row_copy)
                         updated_data_row = data_row_copy
 
         # check if functions column is already there
-        if('_functions' not in columns):
+        if "_functions" not in columns:
             new_columns = columns + ["_functions"]
             new_df = pd.DataFrame(all_data, columns=new_columns)
         else:
@@ -376,11 +417,14 @@ def process_message(message):
         file_name = "augmentation-" + str(uuid.uuid4()) + ".csv"
         upload_file(csv_as_string, file_name)
         update_db(file_name, dataset_id)
+        update_status_in_db(task_id=task_id, status="SUCCESS")
+
         connection.close()
 
         return file_name
     except Exception as err:
         print("An error occurred")
+        update_status_in_db(task_id=task_id, status="ERROR")
         connection.close()
 
         raise err
@@ -390,7 +434,7 @@ if __name__ == "__main__":
     process_message(
         # {"body": "55///////name,occupation\nmicah,software engineer\nbrady,ai engineer"}
         # {"body": "55///////1d337967-24af-4ad4-8c82-d6b81d1223c7.csv"}
-        {"body": "92"}
+        {"body": "92", "messageAttributes": {"uid": "user_2TOon0K0TZUy8buNvs3ICvcQBdV"}}
         # {"body": "55///////augmentation-15cfa0f5-9863-439b-9e92-34930db87eec.csv"}
         # {"body": "55///////augmentation-ca74536d-fac0-42c5-b9db-3a9a0d8281b5.csv"}
     )
