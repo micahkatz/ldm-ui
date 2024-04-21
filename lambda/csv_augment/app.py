@@ -345,7 +345,7 @@ def process_message(message):
         # dataset_id = message["body"].split("///////")[0]
         # file_key = message["body"].split("///////")[1]
         print("dataset_id", dataset_id)
-        user_id = message["messageAttributes"]["uid"]
+        user_id = message["messageAttributes"]["uid"]["stringValue"]
         task_id = new_status_in_db(user_id=user_id, dataset_id=dataset_id)
 
         # s3 = boto3.resource("s3")
@@ -408,10 +408,10 @@ def process_message(message):
                         print("data_row", data_row_copy)
                         updated_data_row = data_row_copy
 
-                        update_status_in_db(task_id=task_id, status="LOADING", message=f'Created {len(all_data)} Rows')
+                        # update_status_in_db(task_id=task_id, status="LOADING", message=f'Created {len(all_data)} Rows')
 
 
-        update_status_in_db(task_id=task_id, status="LOADING", message=f'Finishing')
+        update_status_in_db(task_id=task_id, status="LOADING", message='Finishing')
 
         # check if functions column is already there
         if "_functions" not in columns:
@@ -424,7 +424,7 @@ def process_message(message):
         file_name = "augmentation-" + str(uuid.uuid4()) + ".csv"
         upload_file(csv_as_string, file_name)
         update_db(file_name, dataset_id)
-        update_status_in_db(task_id=task_id, status="SUCCESS")
+        update_status_in_db(task_id=task_id, status="SUCCESS", message='Completed')
 
         connection.close()
 
@@ -441,7 +441,8 @@ if __name__ == "__main__":
     process_message(
         # {"body": "55///////name,occupation\nmicah,software engineer\nbrady,ai engineer"}
         # {"body": "55///////1d337967-24af-4ad4-8c82-d6b81d1223c7.csv"}
-        {"body": "92", "messageAttributes": {"uid": "user_2TOon0K0TZUy8buNvs3ICvcQBdV"}}
+        # {"body": "92", "messageAttributes": {"uid": "user_2TOon0K0TZUy8buNvs3ICvcQBdV"}}
+        {"body": "92", "messageAttributes": {"uid": {"stringValue": "user_2TOon0K0TZUy8buNvs3ICvcQBdV", "stringListValues": [], "binaryListValues": [], "dataType": "String"}}}
         # {"body": "55///////augmentation-15cfa0f5-9863-439b-9e92-34930db87eec.csv"}
         # {"body": "55///////augmentation-ca74536d-fac0-42c5-b9db-3a9a0d8281b5.csv"}
     )

@@ -3,6 +3,7 @@ import {
     augmentDataset,
     getAugmentationCsvUrl,
     getAugmentationIdByUri,
+    getTaskStatus,
 } from '@/app/actions'
 import {
     AlertDialog,
@@ -16,7 +17,7 @@ import {
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query'
-import { Loader2, Wand2 } from 'lucide-react'
+import { Check, Loader2, Wand2, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Button } from './ui/button'
@@ -43,6 +44,13 @@ const AugmentButton = (props: Props) => {
         queryFn: () => getAugmentationCsvUrl(props.datasetId),
         enabled: !!augmentationMutation.isSuccess,
         refetchInterval: augmentationUrlPollingInterval,
+    })
+    const augmentationStatusPolling = useQuery({
+        queryKey: ['augmentationStatusPolling', props.datasetId],
+        queryFn: () => getTaskStatus(props.datasetId),
+        enabled: !!augmentationMutation.isSuccess,
+        refetchInterval: augmentationUrlPollingInterval / 2,
+        // refetchInterval: 1000,
     })
 
     const [augmentationLoading, setAugmentationLoading] = useState(false)
@@ -79,6 +87,22 @@ const AugmentButton = (props: Props) => {
         }
     }, [augmentationUrlPolling?.data, augmentationMutation.status])
 
+    const renderIcon = (status?: string | null) => {
+        if(augmentationLoading){
+            return <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+        }
+        switch (status) {
+            case 'LOADING':
+                return <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            case 'SUCCESS':
+                return <Check className="mr-2 h-4 w-4" />
+            case 'ERROR':
+                return <X className="mr-2 h-4 w-4" />
+            default:
+                return <Wand2 className="h-4 w-4 mr-1" />
+        }
+    }
+
     return (
         <>
             <Button
@@ -90,12 +114,8 @@ const AugmentButton = (props: Props) => {
                 disabled={augmentationLoading}
                 className="w-fit"
             >
-                {augmentationLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                    <Wand2 className="h-4 w-4 mr-1" />
-                )}
-                Augment
+                {renderIcon(augmentationStatusPolling?.data?.status)}
+                {augmentationStatusPolling?.data?.message || 'Augment'}
             </Button>
 
             <AlertDialog onOpenChange={setAlertIsOpen} open={alertIsOpen}>

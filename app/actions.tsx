@@ -7,7 +7,7 @@ const openai = new OpenAI({
 import { auth, currentUser, redirectToSignIn } from '@clerk/nextjs'
 import { sql } from '@vercel/postgres'
 import { drizzle } from 'drizzle-orm/vercel-postgres'
-import { dataset } from '@/lib/schema'
+import { dataset, task } from '@/lib/schema'
 import { db } from '@/lib/db'
 import {
     PutObjectCommand,
@@ -15,9 +15,10 @@ import {
     S3Client,
 } from '@aws-sdk/client-s3'
 import { randomUUID } from 'crypto'
-import { eq } from 'drizzle-orm'
+import { and, asc, desc, eq } from 'drizzle-orm'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import AWS from 'aws-sdk'
+import { PgSerial } from 'drizzle-orm/pg-core'
 AWS.config.update({ region: 'us-east-1' })
 
 var sqs = new AWS.SQS({ region: 'us-east-1' })
@@ -144,7 +145,7 @@ export async function handleCreateDataset({
 }
 
 export async function augmentDataset(
-    datasetId: string | null | undefined | number,
+    datasetId: string | null | undefined | number
 ) {
     const { userId } = auth()
 
@@ -175,7 +176,10 @@ export async function augmentDataset(
                     console.log('Error sending message to SQS', err)
                     reject(err)
                 } else {
-                    console.log('Successfully sent message to SQS', data.MessageId)
+                    console.log(
+                        'Successfully sent message to SQS',
+                        data.MessageId
+                    )
                     resolve(data.MessageId)
                 }
             })
@@ -221,6 +225,54 @@ export async function getAugmentationIdByUri(uri: any) {
     console.log('getAugmentationCsvUrl', dbResult?.[0]?.id)
 
     return dbResult?.[0]?.id
+}
+export async function getTaskStatus(dataset_id: any) {
+    const { userId } = auth()
+    if (!userId) {
+        throw 'error'
+    }
+    console.log('getTaskStatus', {dataset_id, userId})
+
+    const dbResult = await db
+        .select({
+            status: task.status,
+            message: task.message,
+        })
+        .from(task)
+        .where(
+            and(
+                eq(dataset_id, task.dataset_id),
+                // @ts-ignore
+                eq(userId, task.user_id)
+            )
+        )
+        .orderBy(desc(task.createdAt))
+        .limit(1)
+
+    console.log('getTaskStatus',dbResult)
+
+    return dbResult?.[0]
+}
+export async function getPositionInQueue(dataset_id: any) {
+    const { userId } = auth()
+    if (!userId) {
+        return null
+    }
+
+    const dbResult = await db
+        .select()
+        .from(task)
+        .where(
+            and(
+                eq(dataset_id, task.dataset_id),
+                // @ts-ignore
+                eq(userId, task.user_id)
+            )
+        )
+        .orderBy(desc(task.createdAt))
+
+    // todo: finish this
+    return -1
 }
 
 export interface GetFileProps {
