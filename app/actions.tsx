@@ -1,5 +1,6 @@
 'use server'
 import { NextResponse } from 'next/server'
+import fs from 'fs'
 import OpenAI from 'openai'
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -7,18 +8,20 @@ const openai = new OpenAI({
 import { auth, currentUser, redirectToSignIn } from '@clerk/nextjs'
 import { sql } from '@vercel/postgres'
 import { drizzle } from 'drizzle-orm/vercel-postgres'
-import { dataset, task } from '@/lib/schema'
+import { DatasetType, dataset, task } from '@/lib/schema'
 import { db } from '@/lib/db'
 import {
     PutObjectCommand,
     GetObjectCommand,
     S3Client,
+    PutObjectCommandInput,
 } from '@aws-sdk/client-s3'
 import { randomUUID } from 'crypto'
 import { and, asc, desc, eq } from 'drizzle-orm'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import AWS from 'aws-sdk'
-import { PgSerial } from 'drizzle-orm/pg-core'
+import { PgInsertValue, PgSerial } from 'drizzle-orm/pg-core'
+import { Readable } from 'stream'
 AWS.config.update({ region: 'us-east-1' })
 
 var sqs = new AWS.SQS({ region: 'us-east-1' })
@@ -28,14 +31,92 @@ type ColumnType = {
     description: string
     id: string
 }
+
+const insertAndUploadDataset = async ({
+    csvData,
+    userId,
+    name,
+    column_data,
+    prompt,
+}: {
+    csvData: PutObjectCommandInput['Body']
+    userId: string
+    name?: string
+    column_data?: string
+    prompt?: string
+}) => {
+    const objectKey = `${randomUUID()}.csv`
+    const putCommand = new PutObjectCommand({
+        Body: csvData,
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: objectKey,
+    })
+    const s3response = await s3Client.send(putCommand)
+    console.log({ s3response })
+
+    let valuesToInsert: PgInsertValue<DatasetType> = {}
+
+    prompt && (valuesToInsert.prompt = prompt)
+    column_data && (valuesToInsert.column_data = column_data)
+    name && (valuesToInsert.name = name)
+
+    const result = await db
+        .insert(dataset)
+        .values({
+            user_id: userId,
+            dataset_uri: objectKey,
+            ...valuesToInsert,
+        })
+        .returning({ insertedId: dataset.id })
+
+    return result
+}
+
+export async function handleUploadDataset(formData: FormData) {
+    const { userId } = auth()
+
+    if (!userId) {
+        throw new Error('Unauthorized')
+    }
+    const user = await currentUser()
+    if (!user) {
+        throw new Error('User Not Defined')
+    }
+    console.log({ emails: user?.emailAddresses })
+    if (
+        !user.emailAddresses.find(
+            (item) =>
+                item.emailAddress === 'micahj2110@gmail.com' ||
+                item.emailAddress === 'bcsteele1228@gmail.com'
+        )
+    ) {
+        throw new Error('Forbidden')
+    }
+
+    const file = formData.get('file') as File
+
+    const result = await insertAndUploadDataset({
+        // @ts-ignore
+        csvData: await file.arrayBuffer(),
+        name: file.name,
+        userId,
+    })
+
+    return { llmResponse: null, datasetId: result?.[0]?.insertedId }
+}
+
 export async function handleCreateDataset({
     name,
     prompt,
     columns,
+    filename,
+    contentType,
 }: {
-    name: string
-    prompt: string
-    columns: ColumnType[]
+    name?: string
+    prompt?: string
+    columns?: ColumnType[]
+    filename?: string
+    contentType?: string
 }) {
     const { userId } = auth()
 
@@ -58,6 +139,9 @@ export async function handleCreateDataset({
     }
 
     const makeColumnText = () => {
+        if (!columns) {
+            return ''
+        }
         var columnText = ''
         columns.forEach(
             (column) =>
@@ -117,25 +201,13 @@ export async function handleCreateDataset({
     const llmResponse = completion?.choices?.[0]?.message?.content
     console.log({ llmResponse })
     if (llmResponse && llmResponse !== null) {
-        const objectKey = `${randomUUID()}.csv`
-        const putCommand = new PutObjectCommand({
-            Body: llmResponse,
-            Bucket: process.env.AWS_BUCKET_NAME,
-            Key: objectKey,
+        const result = await insertAndUploadDataset({
+            csvData: llmResponse,
+            column_data: makeColumnText(),
+            name,
+            userId,
+            prompt,
         })
-        const s3response = await s3Client.send(putCommand)
-        console.log({ s3response })
-
-        const result = await db
-            .insert(dataset)
-            .values({
-                name,
-                prompt,
-                column_data: makeColumnText(),
-                user_id: userId,
-                dataset_uri: objectKey,
-            })
-            .returning({ insertedId: dataset.id })
 
         console.log({ result })
 
@@ -231,7 +303,7 @@ export async function getTaskStatus(dataset_id: any) {
     if (!userId) {
         throw 'error'
     }
-    console.log('getTaskStatus', {dataset_id, userId})
+    console.log('getTaskStatus', { dataset_id, userId })
 
     const dbResult = await db
         .select({
@@ -249,7 +321,7 @@ export async function getTaskStatus(dataset_id: any) {
         .orderBy(desc(task.createdAt))
         .limit(1)
 
-    console.log('getTaskStatus',dbResult)
+    console.log('getTaskStatus', dbResult)
 
     return dbResult?.[0]
 }

@@ -8,8 +8,17 @@ import { dataset } from '@/lib/schema'
 import { desc, eq } from 'drizzle-orm'
 import { auth } from '@clerk/nextjs'
 import DatasetList from '@/components/DatasetList'
-import { Plus } from 'lucide-react'
-
+import { Plus, Upload } from 'lucide-react'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog'
+import DropFile from '@/components/DropFile'
 export default async function Datasets() {
     const { userId } = auth()
 
@@ -25,12 +34,31 @@ export default async function Datasets() {
             <div className="flex flex-col max-w-2xl">
                 <div className="flex justify-between">
                     <h1 className="text-2xl font-bold mb-2">My Datasets</h1>
-                    <Button asChild>
-                        <Link href="/new">
-                            <Plus className="h-4 w-4 mr-1" />
-                            New
-                        </Link>
-                    </Button>
+                    <div className="flex gap-2">
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant={'secondary'}>
+                                    <Upload className="h-4 w-4 mr-1" />
+                                    Upload
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                    <DialogTitle>Upload Dataset</DialogTitle>
+                                    <DialogDescription>
+                                        Upload a .csv file
+                                    </DialogDescription>
+                                    <DropFile/>
+                                </DialogHeader>
+                            </DialogContent>
+                        </Dialog>
+                        <Button asChild>
+                            <Link href="/new">
+                                <Plus className="h-4 w-4 mr-1" />
+                                New
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
                 <DatasetList
                     // @ts-ignore
