@@ -17,7 +17,11 @@ import { Widget } from '@typeform/embed-react'
 export default function Waitlist() {
     return (
         <main className="flex flex-col items-center justify-center py-8 px-8 bg-background">
-            <Widget id="gEqQARFH" className="h-screen w-full bg-transparent" />
+            <h1 className="text-xl mt-8 mb-8">Join the Waitlist</h1>
+            <Widget
+                id="gEqQARFH"
+                className="h-[calc(100vh-2rem)] w-full bg-transparent -mt-2"
+            />
         </main>
     )
 }

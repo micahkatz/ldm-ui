@@ -26,7 +26,8 @@ export default function LandingPage() {
                 </h1>
             </div>
             <Button variant={'secondary'} className="text-lg mb-8" asChild>
-                <Link href="/dashboard">Get Started</Link>
+                {/* <Link href="/dashboard">Get Started</Link> */}
+                <Link href="/waitlist">Join the Waitlist</Link>
             </Button>
             <div className="items-start flex flex-col max-w-2xl">
                 <h2 className="text-4xl font-bold mb-8">Why DataSynth AI?</h2>
@@ -93,8 +94,8 @@ export default function LandingPage() {
                     high-quality data.
                 </p>
                 <Button className="text-lg mb-16 self-center" asChild>
-                <Link href="/waitlist">Join the Waitlist</Link>
-            </Button>
+                    <Link href="/waitlist">Join the Waitlist</Link>
+                </Button>
                 <div className="mb-8" />
                 <h2 className="text-4xl font-bold mb-8">Meet the Team</h2>
                 <div className="flex items-center gap-8">
